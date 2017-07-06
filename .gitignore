@@ -1,0 +1,11 @@
+.vs
+bin
+obj
+packages
+
+*.suo
+*.obj
+*.pch
+*.ncb
+*.sdf
+*.cachefile

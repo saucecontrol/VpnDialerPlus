@@ -1,0 +1,210 @@
+// Microsoft Visual C++ generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "atlres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE 
+BEGIN
+    "#include ""atlres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE 
+BEGIN
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_ICON_MAIN           ICON                    "res\\VpnDialerPlus.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_MAINDLG DIALOGEX 0, 0, 223, 89
+STYLE DS_SETFONT | WS_MINIMIZEBOX | WS_CAPTION | WS_SYSMENU
+CAPTION "VPN Dialer+"
+FONT 8, "MS Shell Dlg 2", 0, 0, 0x0
+BEGIN
+    LTEXT           "&VPN Connection",IDC_STATIC,6,5,89,9
+    COMBOBOX        IDC_COMBO_CONNECTIONS,6,16,211,48,CBS_DROPDOWNLIST | CBS_SORT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "",IDC_STATIC_STATUS,6,32,211,33
+    DEFPUSHBUTTON   "&Connect",IDC_BUTTON_CONNECT,6,69,50,14
+    PUSHBUTTON      "&Disconnect",IDC_BUTTON_DISCONNECT,6,69,50,14,NOT WS_VISIBLE
+    PUSHBUTTON      "&Settings",IDC_BUTTON_SETTINGS,59,69,50,14
+    PUSHBUTTON      "&Properties",IDC_BUTTON_PROPERTIES,113,69,50,14
+    PUSHBUTTON      "&New",IDC_BUTTON_NEW,167,69,50,14
+END
+
+IDD_SETTINGSDLG DIALOGEX 0, 0, 223, 228
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dial Settings"
+FONT 8, "MS Shell Dlg 2", 0, 0, 0x0
+BEGIN
+    GROUPBOX        "Static Routes",IDC_STATIC,6,7,211,126,WS_GROUP
+    LTEXT           "Routes entered below will be added to the Windows routing table in place of the default RAS route after this connection is dialed.",IDC_STATIC,13,17,197,24
+    RTEXT           "&Destination:",IDC_STATIC,11,50,43,8
+    CONTROL         "",IDC_IPADDRESS_NET,"SysIPAddress32",WS_TABSTOP,58,47,100,15
+    RTEXT           "Subnet &Mask:",IDC_STATIC,9,67,45,8
+    CONTROL         "",IDC_IPADDRESS_MASK,"SysIPAddress32",WS_TABSTOP,58,64,100,15
+    PUSHBUTTON      "&Add",IDC_BUTTON_ADD,162,65,50,14,WS_DISABLED
+    LISTBOX         IDC_LIST_ROUTES,58,85,100,40,LBS_SORT | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Remo&ve",IDC_BUTTON_REMOVE,162,85,50,14,WS_DISABLED
+    GROUPBOX        "Connection Keep-Alive",IDC_STATIC,6,135,211,63,WS_GROUP
+    LTEXT           "If an IP address is entered below, an ICMP Echo packet will be sent to the specified host every 6 seconds while connected to keep the connection active.",IDC_STATIC,13,147,197,24
+    RTEXT           "&Host:",IDC_STATIC,9,179,45,8
+    CONTROL         "",IDC_IPADDRESS_KEEPALIVE,"SysIPAddress32",WS_TABSTOP,58,176,100,15
+    DEFPUSHBUTTON   "OK",IDOK,113,206,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,167,206,50,14
+END
+
+IDD_LOGONDLG DIALOGEX 0, 0, 174, 66
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "VPN Authentication"
+FONT 8, "MS Shell Dlg 2", 0, 0, 0x0
+BEGIN
+    RTEXT           "&User Name:",IDC_STATIC,6,9,41,8
+    EDITTEXT        IDC_EDIT_USER,54,6,114,14,ES_AUTOHSCROLL
+    RTEXT           "&Password:",IDC_STATIC,6,26,41,8
+    EDITTEXT        IDC_EDIT_PASS,54,23,114,14,ES_PASSWORD | ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,64,46,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,118,46,50,14
+END
+
+IDD_ABOUTDLG DIALOGEX 0, 0, 187, 102
+STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "About VPN Dialer+"
+FONT 8, "MS Shell Dlg 2", 0, 0, 0x0
+BEGIN
+    GROUPBOX        "",IDC_STATIC,7,7,115,88
+    CTEXT           "VPN Dialer+ v1.1.0\n\n© 2005-2007\nIngram Partners Inc",IDC_STATIC,25,52,78,41
+    ICON            IDR_ICON_MAIN,IDC_STATIC,55,19,21,20
+    DEFPUSHBUTTON   "OK",IDOK,130,81,50,14
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,1,0,0
+ PRODUCTVERSION 1,1,0,0
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x2L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName", "Ingram Partners Inc"
+            VALUE "FileDescription", "VPN Dialer+"
+            VALUE "FileVersion", "1, 1, 0, 0"
+            VALUE "InternalName", "VPN Dialer+"
+            VALUE "LegalCopyright", "Copyright (c) 2005-2007 Ingram Partners Inc"
+            VALUE "OriginalFilename", "VpnDialerPlus.exe"
+            VALUE "ProductName", "VPN Dialer+"
+            VALUE "ProductVersion", "1, 1, 0, 0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// XML
+//
+
+CONFIG.XML              XML                     "res\\config.xml"
+CONFIG.XSD              XML                     "res\\config.xsd"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MENU_POPUP MENU 
+BEGIN
+    POPUP "Popup"
+    BEGIN
+        POPUP "&Connect"
+        BEGIN
+            MENUITEM "(none)",                      ID_CONNECT, GRAYED
+        END
+        POPUP "&Disconnect"
+        BEGIN
+            MENUITEM "(none)",                      ID_DISCONNECT, GRAYED
+        END
+        MENUITEM SEPARATOR
+        MENUITEM "About",                       ID_APP_ABOUT
+        MENUITEM "Open VPN Dialer+",            ID_FILE_OPEN
+        MENUITEM "E&xit",                       IDCANCEL
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE 
+BEGIN
+    IDR_ICON_MAIN           "VPN Dialer+"
+END
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+

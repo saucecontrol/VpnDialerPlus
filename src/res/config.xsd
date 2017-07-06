@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<xs:element name="VpnDialerConfig">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="Connection" minOccurs="0" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element name="AddRoute" minOccurs="0" maxOccurs="unbounded">
+								<xs:complexType>
+									<xs:attribute name="Address" type="IPAddress" use="required" />
+									<xs:attribute name="MaskBits" type="SubnetMaskBits" use="required" />
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+						<xs:attribute name="Name" type="xs:string" use="required" />
+						<xs:attribute name="Reconnect" type="xs:boolean" use="optional" />
+						<xs:attribute name="KeepAlive" type="IPAddress" use="optional" />
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:simpleType name="IPAddress">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)" />
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="SubnetMaskBits">
+		<xs:restriction base="xs:unsignedByte">
+			<xs:minInclusive value="0" />
+			<xs:maxInclusive value="32" />
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

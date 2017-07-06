@@ -1,0 +1,5 @@
+<VpnDialerConfig>
+	<Connection Name="SampleVpnConnection" KeepAlive="172.16.0.1">
+		<AddRoute Address="172.16.0.0" MaskBits="12" />
+	</Connection>
+</VpnDialerConfig>
