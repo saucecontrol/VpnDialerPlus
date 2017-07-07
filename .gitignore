@@ -5,7 +5,9 @@ packages
 
 *.suo
 *.obj
+*.aps
 *.pch
 *.ncb
 *.sdf
+*.user
 *.cachefile

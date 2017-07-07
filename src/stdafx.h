@@ -1,13 +1,13 @@
 // stdafx.h : include file for standard system include files,
-//  or project specific include files that are used frequently, but
-//      are changed infrequently
-//
+//  or project specific include files that are used frequently,
+//  but are changed infrequently
 
 #pragma once
 
-#define WINVER       0x0501
-#define _WIN32_WINNT 0x0501
-#define _WIN32_IE    0x0600
+#define WINVER        _WIN32_WINNT_WIN6
+#define _WIN32_WINNT  _WIN32_WINNT_WIN6
+#define _WIN32_IE     _WIN32_IE_WIN6
+#define NTDDI_VERSION NTDDI_WIN6
 
 #define OEMRESOURCE
 #define _ATL_NO_COM
@@ -44,4 +44,4 @@ extern CAppModule _Module;
 #pragma comment(lib, "ws2_32.lib")
 #pragma comment(lib, "iphlpapi.lib")
 
-#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' publicKeyToken='6595b64144ccf1df' processorArchitecture='*' language='*'\"")
+#pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' publicKeyToken='6595b64144ccf1df' processorArchitecture='*' language='*'\"")
