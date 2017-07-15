@@ -48,12 +48,12 @@ LRESULT CMainDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam
 	DoDataExchange(DDX_LOAD);
 	PopulateVPNList();
 
-	m_threadConNotify.Initialize();
-	m_threadDisNotify.Initialize();
-	m_threadKeepAlive.Initialize();
+	ATLENSURE_SUCCEEDED(m_threadConNotify.Initialize());
+	ATLENSURE_SUCCEEDED(m_threadDisNotify.Initialize());
+	ATLENSURE_SUCCEEDED(m_threadKeepAlive.Initialize());
 
 	m_evt.Create(NULL, TRUE, FALSE, NULL);
-	m_threadConNotify.AddHandle(m_evt, this, NULL);
+	ATLENSURE_SUCCEEDED(m_threadConNotify.AddHandle(m_evt, this, NULL));
 	::RasConnectionNotification((HRASCONN)INVALID_HANDLE_VALUE, m_evt, RASCN_Connection);
 
 	UpdateConnections();
@@ -63,7 +63,7 @@ LRESULT CMainDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam
 	return TRUE;
 }
 
-LRESULT CMainDlg::OnSysCommand(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+LRESULT CMainDlg::OnSysCommand(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, BOOL& bHandled)
 {
 	bHandled = FALSE;
 
@@ -77,7 +77,7 @@ LRESULT CMainDlg::OnSysCommand(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bH
 	return 0;
 }
 
-LRESULT CMainDlg::OnUser(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+LRESULT CMainDlg::OnUser(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& bHandled)
 {
 	bHandled = FALSE;
 
@@ -140,7 +140,7 @@ LRESULT CMainDlg::OnUser(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled
 	return 0;
 }
 
-LRESULT CMainDlg::OnMenuCommand(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+LRESULT CMainDlg::OnMenuCommand(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
 {
 	CMenuHandle mh((HMENU)lParam);
 	int nMenu = PtrToInt((void*)wParam);
@@ -165,7 +165,7 @@ LRESULT CMainDlg::OnMenuCommand(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& b
 	return 0;
 }
 
-LRESULT CMainDlg::OnMenuOpen(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& bHandled)
+LRESULT CMainDlg::OnMenuOpen(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& bHandled)
 {
 	NotifyIcon(false);
 	ShowWindow(SW_SHOW);
@@ -191,9 +191,9 @@ LRESULT CMainDlg::OnCancel(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOO
 
 void CMainDlg::CloseDialog(int nVal)
 {
-	m_threadConNotify.Shutdown();
-	m_threadDisNotify.Shutdown();
-	m_threadKeepAlive.Shutdown();
+	ATLENSURE_SUCCEEDED(m_threadConNotify.Shutdown());
+	ATLENSURE_SUCCEEDED(m_threadDisNotify.Shutdown());
+	ATLENSURE_SUCCEEDED(m_threadKeepAlive.Shutdown());
 
 	NotifyIcon(false);
 
@@ -257,8 +257,10 @@ LRESULT CMainDlg::OnBnClickedProperties(WORD /*wNotifyCode*/, WORD /*wID*/, HWND
 
 LRESULT CMainDlg::OnBnClickedNew(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
-	RasDialog(CString());
+	CString sEmpty;
+	RasDialog(sEmpty);
 	PopulateVPNList();
+
 	return 0;
 }
 
@@ -284,6 +286,7 @@ bool CMainDlg::IsVpnConnection(LPWSTR pszEntryName)
 	// Use RasGetEntryProperties to make sure connection is a VPN
 	CWin32Heap heap(::GetProcessHeap());
 	PVOID mem = heap.Allocate(sizeof(RASENTRY));
+	ATLENSURE(mem);
 	::ZeroMemory(mem, sizeof(RASENTRY));
 
 	LPRASENTRY lpRasEntry = (LPRASENTRY)mem;
@@ -296,9 +299,10 @@ bool CMainDlg::IsVpnConnection(LPWSTR pszEntryName)
 	if ( dwErr == ERROR_BUFFER_TOO_SMALL)
 	{
 		mem = heap.Reallocate(mem, dwCb);
+		ATLENSURE(mem);
 		lpRasEntry = (LPRASENTRY)mem;
 	}
-	
+
 	dwErr = ::RasGetEntryProperties(NULL, pszEntryName, lpRasEntry, &dwCb, NULL, NULL);
 	if ( dwErr == ERROR_SUCCESS )
 	{
@@ -314,35 +318,33 @@ bool CMainDlg::IsVpnConnection(LPWSTR pszEntryName)
 
 void CMainDlg::PopulateVPNList()
 {
-	// Use RasEnumEntries to populate connection list drop-down
-	CWin32Heap heap(::GetProcessHeap());
-	PVOID mem = heap.Allocate(sizeof(RASENTRYNAME));
-	::ZeroMemory(mem, sizeof(RASENTRYNAME));
-
-	LPRASENTRYNAME lpRasEntryName = (LPRASENTRYNAME)mem;
-	lpRasEntryName->dwSize = sizeof(RASENTRYNAME);
-
-	// First call should fail with ERROR_BUFFER_TOO_SMALL and return required size
-	DWORD dwCb = sizeof(RASENTRYNAME);
+	DWORD dwCb = 0;
 	DWORD dwEntries = 0;
-	DWORD dwErr = ERROR_SUCCESS;
-	dwErr = ::RasEnumEntries(NULL, NULL, lpRasEntryName, &dwCb, &dwEntries);
-	if ( dwErr == ERROR_BUFFER_TOO_SMALL )
+	DWORD dwErr = ::RasEnumEntries(NULL, NULL, NULL, &dwCb, &dwEntries);
+	if ( dwErr == ERROR_SUCCESS )
+		return;
+
+	if ( dwErr != ERROR_BUFFER_TOO_SMALL )
 	{
-		mem = heap.Reallocate(mem, dwCb);
-		lpRasEntryName = (LPRASENTRYNAME)mem;
+		MessageBox(GetErrorString(dwErr) , L"RasEnumEntries Error", MB_OK | MB_ICONERROR);
+		return;
 	}
 
-	dwErr = ::RasEnumEntries(NULL, NULL, lpRasEntryName, &dwCb, &dwEntries);
+	CHeapPtr<RASENTRYNAME> rasEntryNames;
+	ATLENSURE(rasEntryNames.AllocateBytes(dwCb));
+	::memset(rasEntryNames.m_pData, 0, dwCb);
+	rasEntryNames->dwSize = sizeof(RASENTRYNAME);
+
+	dwErr = ::RasEnumEntries(NULL, NULL, rasEntryNames, &dwCb, &dwEntries);
 	if ( dwErr == ERROR_SUCCESS )
 	{
 		for ( DWORD i = 0; i < dwEntries; i++ )
-			if ( IsVpnConnection(lpRasEntryName[i].szEntryName) )
+			if ( IsVpnConnection(rasEntryNames[i].szEntryName) )
 			{
-				if ( m_ConnMap.FindKey(CString(lpRasEntryName[i].szEntryName)) == -1 )
+				if ( m_ConnMap.FindKey(CString(rasEntryNames[i].szEntryName)) == -1 )
 				{
 					CConnection conn;
-					conn.sName = lpRasEntryName[i].szEntryName;
+					conn.sName = rasEntryNames[i].szEntryName;
 					m_ConnMap.Add(conn.sName, conn);
 					m_cboConnections.AddString(conn.sName);
 				}
@@ -355,34 +357,30 @@ void CMainDlg::PopulateVPNList()
 				config.LoadConnection(m_ConnMap.GetValueAt(i));
 		}
 	}
-	else if ( dwErr != ERROR_INVALID_SIZE )  // stupid bogus Vista error
+	else
 		MessageBox(GetErrorString(dwErr) , L"RasEnumEntries Error", MB_OK | MB_ICONERROR);
-
-	heap.Free(mem);
 }
 
 void CMainDlg::UpdateConnections()
 {
-	// Use RasEnumConnections to check for existing connections
-	CWin32Heap heap(::GetProcessHeap());
-	PVOID mem = heap.Allocate(sizeof(RASCONN));
-	::ZeroMemory(mem, sizeof(RASCONN));
-
-	LPRASCONN lpRasConn = (LPRASCONN)mem;
-	lpRasConn->dwSize = sizeof(RASCONN);
-
-	// First call should fail with ERROR_BUFFER_TOO_SMALL and return required size
-	DWORD dwCb = sizeof(RASCONN);
+	DWORD dwCb = 0;
 	DWORD dwEntries = 0;
-	DWORD dwErr = ERROR_SUCCESS;
-	dwErr = ::RasEnumConnections(lpRasConn, &dwCb, &dwEntries);
-	if ( dwErr == ERROR_BUFFER_TOO_SMALL )
+	DWORD dwErr = ::RasEnumConnections(NULL, &dwCb, &dwEntries);
+	if ( dwErr == ERROR_SUCCESS )
+		return;
+
+	if ( dwErr != ERROR_BUFFER_TOO_SMALL )
 	{
-		mem = heap.Reallocate(mem, dwCb);
-		lpRasConn = (LPRASCONN)mem;
+		MessageBox(GetErrorString(dwErr) , L"RasEnumConnections Error", MB_OK | MB_ICONERROR);
+		return;
 	}
 
-	dwErr = ::RasEnumConnections(lpRasConn, &dwCb, &dwEntries);
+	CHeapPtr<RASCONN> rasConns;
+	ATLENSURE(rasConns.AllocateBytes(dwCb));
+	::memset(rasConns.m_pData, 0, dwCb);
+	rasConns->dwSize = sizeof(RASCONN);
+
+	dwErr = ::RasEnumConnections(rasConns, &dwCb, &dwEntries);
 	if ( dwErr == ERROR_SUCCESS )
 	{
 		for ( DWORD i = 0; i < dwEntries; i++ )
@@ -390,15 +388,15 @@ void CMainDlg::UpdateConnections()
 			RASCONNSTATUS rcs = {0};
 			rcs.dwSize = sizeof(RASCONNSTATUS);
 
-			::RasGetConnectStatus(lpRasConn[i].hrasconn, &rcs);
+			::RasGetConnectStatus(rasConns[i].hrasconn, &rcs);
 			if ( rcs.rasconnstate == RASCS_Connected )
 			{
-				int nPos = m_ConnMap.FindKey(CString(lpRasConn[i].szEntryName));
+				int nPos = m_ConnMap.FindKey(CString(rasConns[i].szEntryName));
 				if ( nPos != -1 )
 				{
 					CConnection& conn = m_ConnMap.GetValueAt(nPos);
-					if ( conn.m_hRasConn != lpRasConn[i].hrasconn )
-						conn.m_hRasConn = lpRasConn[i].hrasconn;
+					if ( conn.m_hRasConn != rasConns[i].hrasconn )
+						conn.m_hRasConn = rasConns[i].hrasconn;
 
 					if ( !conn.m_bConnected )
 						PostConnect(conn);
@@ -406,17 +404,15 @@ void CMainDlg::UpdateConnections()
 			}
 		}
 	}
-	else if ( dwErr != ERROR_INVALID_SIZE )  // stupid bogus Vista error
+	else
 		MessageBox(GetErrorString(dwErr) , L"RasEnumConnections Error", MB_OK | MB_ICONERROR);
-
-	heap.Free(mem);
 }
 	
 void CMainDlg::UpdateUI()
 {
 	if (m_sSelectedConnection.IsEmpty())
 	{
-		m_stcStatus.SetWindowText(NULL);
+		m_stcStatus.SetWindowText(L"");
 
 		m_btnConnect.EnableWindow(FALSE);
 		m_btnDisconnect.EnableWindow(FALSE);
@@ -442,7 +438,7 @@ void CMainDlg::UpdateUI()
 			m_btnConnect.ShowWindow(SW_SHOW);
 			m_btnDisconnect.ShowWindow(SW_HIDE);
 
-			m_stcStatus.SetWindowText(NULL);
+			m_stcStatus.SetWindowText(L"");
 		}
 	}
 }
@@ -468,7 +464,7 @@ void CMainDlg::Connect(CConnection& conn)
 	BOOL bPasswordSaved = false;
 
 	RasDialParams.dwSize = sizeof(RASDIALPARAMS);
-	::lstrcpyn(RasDialParams.szEntryName, conn.sName, RAS_MaxEntryName);
+	ATLENSURE_SUCCEEDED(::StringCchCopy(RasDialParams.szEntryName, RAS_MaxEntryName, conn.sName));
 
 	dwErr = ::RasGetEntryDialParams(NULL, &RasDialParams, &bPasswordSaved);
 	if ( dwErr != ERROR_SUCCESS )
@@ -487,8 +483,8 @@ void CMainDlg::Connect(CConnection& conn)
 		if ( !logondlg.DoModal() )
 			return;
 
-		::lstrcpyn(RasDialParams.szUserName, logondlg.m_sUser, UNLEN);
-		::lstrcpyn(RasDialParams.szPassword, logondlg.m_sPass, PWLEN);
+		ATLENSURE_SUCCEEDED(::StringCchCopy(RasDialParams.szUserName, UNLEN, logondlg.m_sUser));
+		ATLENSURE_SUCCEEDED(::StringCchCopy(RasDialParams.szPassword, PWLEN, logondlg.m_sPass));
 	}
 
 	RasDialParams.dwCallbackId = (ULONG_PTR)this;
@@ -506,18 +502,22 @@ void CMainDlg::Connect(CConnection& conn)
 void CMainDlg::Disconnect(CConnection& conn)
 {
 	CCursor cur;
-	cur.LoadOEMCursor(IDC_WAIT);
+	cur.LoadSysCursor(IDC_WAIT);
 	SetCursor(cur);
 	m_btnDisconnect.EnableWindow(FALSE);
 
 	::RasHangUp(conn.m_hRasConn);
 	conn.m_bConnected = false;
 	conn.m_hRasConn = NULL;
-	m_threadKeepAlive.RemoveHandle(conn.m_timer);
+	if (conn.m_timer)
+	{
+		ATLENSURE_SUCCEEDED(m_threadKeepAlive.RemoveHandle(conn.m_timer));
+		conn.m_timer.m_h = NULL;
+	}
 
 	m_btnDisconnect.EnableWindow();
 	cur.DestroyCursor();
-	cur.LoadOEMCursor(IDC_ARROW);
+	cur.LoadSysCursor(IDC_ARROW);
 	SetCursor(cur);
 
 	UpdateUI();
@@ -532,7 +532,7 @@ void CMainDlg::PostConnect(CConnection& conn)
 
 		::Sleep(1000);
 
-		RASPPPIP rasip;
+		RASPPPIP rasip = {0};
 		rasip.dwSize = sizeof(rasip);
 		DWORD dwCb = sizeof(rasip);
 		DWORD dwErr = ERROR_SUCCESS;
@@ -545,31 +545,30 @@ void CMainDlg::PostConnect(CConnection& conn)
 		}
 
 		u_long ulIP = ::inet_addr(CW2A(rasip.szIpAddress));
-		MIB_IPFORWARDROW route;
-		bool bRouteFound = false;
 
-		CWin32Heap heap(::GetProcessHeap());
-		PVOID mem = heap.Allocate(sizeof(MIB_IPFORWARDTABLE));
-
-		PMIB_IPFORWARDTABLE pIpForwardTable = (PMIB_IPFORWARDTABLE)mem;
-		dwCb = sizeof(PMIB_IPFORWARDTABLE);
-
-		dwErr = ::GetIpForwardTable(pIpForwardTable, &dwCb, FALSE);
-		if ( dwErr == ERROR_INSUFFICIENT_BUFFER )
+		dwCb = 0;
+		dwErr = ::GetIpForwardTable(NULL, &dwCb, FALSE);
+		if ( dwErr != ERROR_INSUFFICIENT_BUFFER )
 		{
-			mem = heap.Reallocate(mem, dwCb);
-			pIpForwardTable = (PMIB_IPFORWARDTABLE)mem;
+			MessageBox(GetErrorString(dwErr), L"GetIpForwardTable Error", MB_OK | MB_ICONERROR);
+			return;
 		}
 
-		dwErr = ::GetIpForwardTable(pIpForwardTable, &dwCb, FALSE);
+		CHeapPtr<MIB_IPFORWARDTABLE> routeTable;
+		ATLENSURE(routeTable.AllocateBytes(dwCb));
+		::memset(routeTable.m_pData, 0, dwCb);
+
+		bool bRouteFound = false;
+		MIB_IPFORWARDROW route = { 0 };
+
+		dwErr = ::GetIpForwardTable(routeTable, &dwCb, FALSE);
 		if ( dwErr == ERROR_SUCCESS )
 		{
-			for ( u_long i = 0; i < pIpForwardTable->dwNumEntries; i++ )
+			for ( u_long i = 0; i < routeTable->dwNumEntries; i++ )
 			{
-				if ( pIpForwardTable->table[i].dwForwardNextHop == ulIP
-						&& pIpForwardTable->table[i].dwForwardDest != 0xFFFFFFFF )
+				if ( routeTable->table[i].dwForwardNextHop == ulIP && routeTable->table[i].dwForwardDest != ~0UL )
 				{
-					::memcpy(&route, &pIpForwardTable->table[i], sizeof(MIB_IPFORWARDROW));
+					::memcpy(&route, &routeTable->table[i], sizeof(MIB_IPFORWARDROW));
 
 					dwErr = ::DeleteIpForwardEntry(&route);
 					if ( dwErr != ERROR_SUCCESS )
@@ -588,7 +587,6 @@ void CMainDlg::PostConnect(CConnection& conn)
 			MessageBox(GetErrorString(dwErr), L"GetIpForwardTable Error", MB_OK | MB_ICONERROR);
 			//return;
 		}
-		heap.Free(mem);
 
 		if ( bRouteFound )
 		{
@@ -613,12 +611,12 @@ void CMainDlg::PostConnect(CConnection& conn)
 	}
 
 	if ( !conn.sKeepAlive.IsEmpty() )
-		m_threadKeepAlive.AddTimer(6000, this, (DWORD_PTR)&conn, &conn.m_timer.m_h);
+		ATLENSURE_SUCCEEDED(m_threadKeepAlive.AddTimer(6000, this, (DWORD_PTR)&conn, &conn.m_timer.m_h));
 
 	if ( !conn.m_evt )
 	{
 		conn.m_evt.Create(NULL, TRUE, FALSE, NULL);
-		m_threadDisNotify.AddHandle(conn.m_evt, this, (DWORD_PTR)&conn);
+		ATLENSURE_SUCCEEDED(m_threadDisNotify.AddHandle(conn.m_evt, this, (DWORD_PTR)&conn));
 	}
 
 	DWORD dwErr = ::RasConnectionNotification(conn.m_hRasConn, conn.m_evt, RASCN_Disconnection);
@@ -642,7 +640,7 @@ void CMainDlg::RasDialog(CString& sConnName)
 	if ( sConnName.IsEmpty() )
 		red.dwFlags |= RASEDFLAG_NewTunnelEntry;
 	else
-		lpszConn = const_cast<LPWSTR>(sConnName.GetString());
+		lpszConn = sConnName.GetBuffer(0);
 
 	//if ( !::RasEntryDlg(NULL, lpszConn, &red) && red.dwError != ERROR_SUCCESS )
 	//	MessageBox(GetErrorString(red.dwError), L"RasEntryDlg Error", MB_OK | MB_ICONERROR);
@@ -674,7 +672,7 @@ void CMainDlg::Minimize(bool bShow)
 	NotifyIcon(true);
 	ShowWindow(SW_HIDE);
 
-	::SetProcessWorkingSetSize(::GetCurrentProcess(), -1, -1);
+	::SetProcessWorkingSetSize(::GetCurrentProcess(), static_cast<SIZE_T>(-1), static_cast<SIZE_T>(-1));
 }
 
 void CMainDlg::NotifyIcon(bool bShow)
@@ -699,7 +697,7 @@ void CMainDlg::CreateMenu()
 	m_menu.DestroyMenu();
 	m_menu.LoadMenu(IDR_MENU_POPUP);
 
-	MENUINFO mi;
+	MENUINFO mi = {0};
 	mi.cbSize = sizeof(MENUINFO);
 	mi.fMask = MIM_STYLE | MIM_APPLYTOSUBMENUS;
 	m_menu.GetMenuInfo(&mi);
@@ -719,7 +717,7 @@ CString CMainDlg::GetErrorString(DWORD dwErr)
 
 	if ( dwErr >= RASBASE && dwErr <= RASBASEEND )
 	{
-		::RasGetErrorString(dwErr, sErr.GetBuffer(256), 256);
+		::RasGetErrorString(dwErr, sErr.GetBuffer(512), 512);
 		sErr.ReleaseBuffer();
 	}
 	else if ( ::FormatMessage( 
@@ -738,16 +736,20 @@ CString CMainDlg::GetErrorString(DWORD dwErr)
 	return sErr;
 }
 
-void CALLBACK CMainDlg::RasDialCallback(ULONG_PTR dwCallbackId, DWORD dwSubEntry, HRASCONN hRasConn, UINT unMsg, RASCONNSTATE RasConnState, DWORD dwError, DWORD dwExtendedError)
+void CALLBACK CMainDlg::RasDialCallback(ULONG_PTR dwCallbackId, DWORD /*dwSubEntry*/, HRASCONN hRasConn, UINT /*unMsg*/, RASCONNSTATE RasConnState, DWORD dwError, DWORD /*dwExtendedError*/)
 {
-	CMainDlg* pMainDlg = (CMainDlg*)dwCallbackId;
-	CConnection* pConn = &pMainDlg->m_ConnMap.GetValueAt(0);
+	CMainDlg* pMainDlg = reinterpret_cast<CMainDlg*>(dwCallbackId);
+	CConnection* pConn = NULL;
 
 	for ( int i = 0; i < pMainDlg->m_ConnMap.GetSize(); i++ )
 	{
-		if ( pMainDlg->m_ConnMap.GetValueAt(i).m_hRasConn == hRasConn )
-			pConn = &pMainDlg->m_ConnMap.GetValueAt(i);
+		CConnection& conn = pMainDlg->m_ConnMap.GetValueAt(i);
+		if ( conn.m_hRasConn == hRasConn )
+			pConn = &conn;
 	}
+
+	if ( !pConn )
+		return;
 
 	CString sMsg;
 	switch ( RasConnState )
@@ -770,8 +772,7 @@ void CALLBACK CMainDlg::RasDialCallback(ULONG_PTR dwCallbackId, DWORD dwSubEntry
 
 	if ( dwError != ERROR_SUCCESS )
 	{
-		if ( pConn )
-			pMainDlg->Disconnect(*pConn);
+		pMainDlg->Disconnect(*pConn);
 
 		if ( pConn->sName == pMainDlg->m_sSelectedConnection )
 			pMainDlg->m_stcStatus.SetWindowText(GetErrorString(dwError));
@@ -796,15 +797,11 @@ HRESULT CMainDlg::Execute(DWORD_PTR dwParam, HANDLE hObject)
 		}
 		else if ( conn.m_timer == hObject )
 		{
-			LPSTR SendData = "VPN Dialer+ Keep-Alive ICMP Echo";
-			LPVOID ReplyBuffer = (LPVOID)_alloca(sizeof(ICMP_ECHO_REPLY) + sizeof(SendData));
+			CHAR SendData[] = "VPN Dialer+ Keep-Alive ICMP Echo";
+			CHAR ReplyBuffer[sizeof(ICMP_ECHO_REPLY) + _countof(SendData) - 1 + 8] = {0};
 
 			HANDLE hIcmp = ::IcmpCreateFile();
-
-			::IcmpSendEcho(hIcmp, inet_addr(CW2A(conn.sKeepAlive)), 
-				SendData, sizeof(SendData), NULL,
-				ReplyBuffer, sizeof(ICMP_ECHO_REPLY) + sizeof(SendData), 2000);
-
+			::IcmpSendEcho(hIcmp, inet_addr(CW2A(conn.sKeepAlive)), SendData, _countof(SendData) - 1, NULL, ReplyBuffer, _countof(ReplyBuffer), 2000);
 			::IcmpCloseHandle(hIcmp);
 		}
 	}

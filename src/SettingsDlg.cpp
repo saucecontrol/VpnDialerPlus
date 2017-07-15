@@ -3,7 +3,7 @@
 
 #include "SettingsDlg.h"
 
-LRESULT CSettingsDlg::OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+LRESULT CSettingsDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
 {
 	CenterWindow(GetParent());
 
@@ -24,7 +24,7 @@ LRESULT CSettingsDlg::OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL
 	return TRUE;
 }
 
-LRESULT CSettingsDlg::OnClickedOK(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled)
+LRESULT CSettingsDlg::OnClickedOK(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
 	m_Conn.asRoutes.RemoveAll();
 	for ( int i = 0; i < m_lstRoutes.GetCount(); i++ )
@@ -42,7 +42,7 @@ LRESULT CSettingsDlg::OnClickedOK(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL
 		in_addr iaKeepAlive;
 		iaKeepAlive.S_un.S_addr = ::htonl(ulKeepAlive);
 
-		m_Conn.sKeepAlive = ::inet_ntoa(iaKeepAlive);
+		m_Conn.sKeepAlive = CA2W(::inet_ntoa(iaKeepAlive));
 	}
 
 	DoDataExchange(DDX_SAVE);
@@ -51,7 +51,7 @@ LRESULT CSettingsDlg::OnClickedOK(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL
 	return 0;
 }
 
-LRESULT CSettingsDlg::OnClickedCancel(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled)
+LRESULT CSettingsDlg::OnClickedCancel(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
 	EndDialog(FALSE);
 
@@ -95,7 +95,7 @@ LRESULT CSettingsDlg::OnBnClickedAdd(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*
 	in_addr iaNet;
 	iaNet.S_un.S_addr = ::htonl(ulNet);
 
-	CString sRoute = ::inet_ntoa(iaNet);
+	CString sRoute = CA2W(::inet_ntoa(iaNet));
 	sRoute.AppendFormat(L"/%d", CConnection::ConvertMaskToBits(ulMask));
 
 	m_lstRoutes.AddString(sRoute);

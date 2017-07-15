@@ -5,16 +5,15 @@
 
 CAppModule _Module;
 
-int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
+int Run(LPWSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
 {
 	CMessageLoop theLoop;
 	_Module.AddMessageLoop(&theLoop);
 
 	CMainDlg dlgMain;
-
-	if(dlgMain.Create(NULL) == NULL)
+	if ( !dlgMain.Create(dlgMain.m_hWnd) )
 	{
-		ATLTRACE(_T("Main dialog creation failed!\n"));
+		ATLTRACE(L"Main dialog creation failed!\n");
 		return 0;
 	}
 
@@ -32,15 +31,13 @@ int Run(LPTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
 	return nRet;
 }
 
-int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lpstrCmdLine, int nCmdShow)
+int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE /*hPrevInstance*/, _In_ LPWSTR lpstrCmdLine, _In_ int nCmdShow)
 {
-	HRESULT hRes = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
-	ATLASSERT(SUCCEEDED(hRes));
+	ATLENSURE_SUCCEEDED(::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE));
 
-	AtlInitCommonControls(ICC_BAR_CLASSES | ICC_INTERNET_CLASSES);	// add flags to support other controls
+	AtlInitCommonControls(ICC_STANDARD_CLASSES | ICC_BAR_CLASSES | ICC_INTERNET_CLASSES);
 
-	hRes = _Module.Init(NULL, hInstance);
-	ATLASSERT(SUCCEEDED(hRes));
+	ATLENSURE_SUCCEEDED(_Module.Init(NULL, hInstance));
 
 	int nRet = Run(lpstrCmdLine, nCmdShow);
 

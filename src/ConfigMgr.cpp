@@ -37,7 +37,7 @@ bool CConfigMgr::Init()
 	}
 
 	CComPtr<IXMLDOMDocument2> pXsd;
-	pXsd.CoCreateInstance(__uuidof(DOMDocument60));
+	ATLENSURE_SUCCEEDED(pXsd.CoCreateInstance(__uuidof(DOMDocument60)));
 
 	m_pXml->put_async(VARIANT_FALSE);
 	m_pXml->setProperty(L"newParser", CComVariant(true));
@@ -47,20 +47,19 @@ bool CConfigMgr::Init()
 
 	CResource res;
 	res.Load(L"XML", L"config.xsd");
-	CString xsd((LPSTR)res.Lock(), res.GetSize());
+	CComBSTR xsd(res.GetSize(), static_cast<LPCSTR>(res.Lock()));
 
 	VARIANT_BOOL bS = VARIANT_FALSE;
-	pXsd->loadXML(CComBSTR(xsd), &bS);
+	pXsd->loadXML(xsd, &bS);
 
 	CComPtr<IXMLDOMSchemaCollection2> pSC;
-	pSC.CoCreateInstance(__uuidof(XMLSchemaCache60));
+	ATLENSURE_SUCCEEDED(pSC.CoCreateInstance(__uuidof(XMLSchemaCache60)));
 
-	pSC->add(L"", CComVariant(pXsd));
+	pSC->add(NULL, CComVariant(pXsd));
 	m_pXml->putref_schemas(CComVariant(pSC));
 
 	LPWSTR pwszPath = m_sPath.GetBuffer(MAX_PATH + 1);
-	::SHGetFolderPathAndSubDir(NULL, CSIDL_APPDATA | CSIDL_FLAG_CREATE, 
-			NULL, SHGFP_TYPE_CURRENT, L"VPN Dialer+", pwszPath);
+	::SHGetFolderPathAndSubDir(NULL, CSIDL_APPDATA | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, L"VPN Dialer+", pwszPath);
 	::PathAppend(pwszPath, L"VpnDialerPlus.config.xml");
 	m_sPath.ReleaseBuffer();
 
@@ -69,7 +68,7 @@ bool CConfigMgr::Init()
 
 bool CConfigMgr::ConfigExists()
 {
-	return (::PathFileExists(m_sPath) == TRUE);
+	return ::PathFileExists(m_sPath);
 }
 
 bool CConfigMgr::LoadConfig(bool bCreate)
@@ -94,9 +93,9 @@ bool CConfigMgr::LoadConfig(bool bCreate)
 		{
 			CResource res;
 			res.Load(L"XML", L"config.xml");
-			CString xml((LPSTR)res.Lock(), res.GetSize());
+			CComBSTR xml(res.GetSize(), static_cast<LPCSTR>(res.Lock()));
 
-			hr = m_pXml->loadXML(CComBSTR(xml), &bS);
+			hr = m_pXml->loadXML(xml, &bS);
 			if ( SUCCEEDED(hr) && bS == VARIANT_TRUE )
 			{
 				hr = m_pXml->save(CComVariant(m_sPath));
@@ -235,10 +234,14 @@ bool CConfigMgr::SaveConnection(CConnection &conn)
 void CConfigMgr::SetErrorFromCOM()
 {
 	CComPtr<IErrorInfo> pErr;
-	CComBSTR bstrErr;
 
-	::GetErrorInfo(0, &pErr);
-	pErr->GetDescription(&bstrErr);
-
-	LastError = bstrErr;
+	HRESULT hr = ::GetErrorInfo(0, &pErr);
+	if ( SUCCEEDED(hr) )
+	{
+		CComBSTR bstrErr;
+		pErr->GetDescription(&bstrErr);
+		LastError = bstrErr;
+	}
+	else
+		LastError = L"Unknown COM Error";
 }
