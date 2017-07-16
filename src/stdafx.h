@@ -17,6 +17,8 @@
 
 #include <atlstr.h>
 
+#define _S(id) (CString((LPCWSTR)id))
+
 #include <codeanalysis/warnings.h>
 
 #pragma warning(push)

@@ -5,9 +5,11 @@
 
 LRESULT CLogonDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
 {
-	CenterWindow(GetParent());
+	CString sTitle;
+	sTitle.Format(IDS_FMT_LOGONTITLE, m_sConnection.GetString());
+	SetWindowText(sTitle);
 
-	SetWindowText(m_sConnection + L" Authentication");
+	CenterWindow(GetParent());
 	DoDataExchange(DDX_LOAD);
 
 	return TRUE;

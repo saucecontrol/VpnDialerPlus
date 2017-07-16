@@ -3,6 +3,7 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
+#include "resource.h"
 
 #include "ConfigMgr.h"
 
@@ -31,36 +32,30 @@ bool CConfigMgr::Init()
 
 	HRESULT hr = m_pXml.CoCreateInstance(__uuidof(DOMDocument60));
 	if ( FAILED(hr) )
-	{
-		LastError = L"Failed to create MSXML2.DOMDocument.6.0.  Please check MSXML 6.0 installation.";
-		return false;
-	}
+		return !LastError.LoadString(IDS_ERR_MSXML6);
 
 	CComPtr<IXMLDOMDocument2> pXsd;
+	CComPtr<IXMLDOMSchemaCollection2> pSC;
 	ATLENSURE_SUCCEEDED(pXsd.CoCreateInstance(__uuidof(DOMDocument60)));
+	ATLENSURE_SUCCEEDED(pSC.CoCreateInstance(__uuidof(XMLSchemaCache60)));
 
-	m_pXml->put_async(VARIANT_FALSE);
-	m_pXml->setProperty(L"newParser", CComVariant(true));
-
-	pXsd->put_async(VARIANT_FALSE);
-	pXsd->setProperty(L"newParser", CComVariant(true));
+	CComBSTR sProp(L"NewParser");
+	CComVariant vVal(true);
+	m_pXml->setProperty(sProp, vVal);
+	pXsd->setProperty(sProp, vVal);
 
 	CResource res;
 	res.Load(L"XML", L"config.xsd");
 	CComBSTR xsd(res.GetSize(), static_cast<LPCSTR>(res.Lock()));
 
 	VARIANT_BOOL bS = VARIANT_FALSE;
-	pXsd->loadXML(xsd, &bS);
-
-	CComPtr<IXMLDOMSchemaCollection2> pSC;
-	ATLENSURE_SUCCEEDED(pSC.CoCreateInstance(__uuidof(XMLSchemaCache60)));
-
-	pSC->add(NULL, CComVariant(pXsd));
-	m_pXml->putref_schemas(CComVariant(pSC));
+	ATLENSURE(SUCCEEDED(pXsd->loadXML(xsd, &bS)) && bS);
+	ATLENSURE_SUCCEEDED(pSC->add(NULL, CComVariant(pXsd)));
+	ATLENSURE_SUCCEEDED(m_pXml->putref_schemas(CComVariant(pSC)));
 
 	LPWSTR pwszPath = m_sPath.GetBuffer(MAX_PATH + 1);
-	::SHGetFolderPathAndSubDir(NULL, CSIDL_APPDATA | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, L"VPN Dialer+", pwszPath);
-	::PathAppend(pwszPath, L"VpnDialerPlus.config.xml");
+	::SHGetFolderPathAndSubDir(NULL, CSIDL_APPDATA | CSIDL_FLAG_CREATE, NULL, SHGFP_TYPE_CURRENT, CONFIG_FOLDER, pwszPath);
+	::PathAppend(pwszPath, CONFIG_FILE);
 	m_sPath.ReleaseBuffer();
 
 	return true;
@@ -77,56 +72,37 @@ bool CConfigMgr::LoadConfig(bool bCreate)
 	if ( m_pElmRoot )
 		return true;
 
-	HRESULT hr = NULL;
 	LastError.Empty();
 
 	VARIANT_BOOL bS = VARIANT_FALSE;
-	hr = m_pXml->load(CComVariant(m_sPath), &bS);
-	if ( SUCCEEDED(hr) && bS == VARIANT_TRUE )
+	HRESULT hr = m_pXml->load(CComVariant(m_sPath), &bS);
+	if ( (FAILED(hr) || !bS) && bCreate )
+	{
+		CResource res;
+		res.Load(L"XML", L"config.xml");
+		CComBSTR xml(res.GetSize(), static_cast<LPCSTR>(res.Lock()));
+
+		ATLENSURE(SUCCEEDED(m_pXml->loadXML(xml, &bS)) && bS);
+
+		hr = m_pXml->save(CComVariant(m_sPath));
+	}
+
+	if ( SUCCEEDED(hr) && bS )
 	{
 		m_pXml->get_documentElement(&m_pElmRoot);
 		return true;
 	}
-	else
-	{
-		if ( bCreate )
-		{
-			CResource res;
-			res.Load(L"XML", L"config.xml");
-			CComBSTR xml(res.GetSize(), static_cast<LPCSTR>(res.Lock()));
 
-			hr = m_pXml->loadXML(xml, &bS);
-			if ( SUCCEEDED(hr) && bS == VARIANT_TRUE )
-			{
-				hr = m_pXml->save(CComVariant(m_sPath));
-				if ( FAILED(hr) )
-				{
-					SetErrorFromCOM();
-					return false;
-				}
-			}
-			else
-			{
-				SetErrorFromCOM();
-				return false;
-			}
-
-			m_pXml->get_documentElement(&m_pElmRoot);
-			return true;
-		}
-
-		SetErrorFromCOM();
-		return false;
-	}
+	SetErrorFromCOM();
+	return false;
 }
 
 bool CConfigMgr::LoadConnection(CConnection& conn)
 {
 	ATLASSERT(m_pElmRoot);
 
-	CComBSTR bstrXPath(L"Connection[@Name=\"");
-	bstrXPath += conn.sName;
-	bstrXPath += "\"]";
+	CComBSTR bstrXPath;
+	bstrXPath.Attach(GetXPath(conn.sName));
 
 	CComPtr<IXMLDOMNode> pNode;
 	HRESULT hr = m_pElmRoot->selectSingleNode(bstrXPath, &pNode);
@@ -136,7 +112,7 @@ bool CConfigMgr::LoadConnection(CConnection& conn)
 	CComQIPtr<IXMLDOMElement> pElm(pNode);
 	CComVariant vt;
 
-	pElm->getAttribute(L"KeepAlive", &vt);
+	pElm->getAttribute(CComBSTR(CONFIG_ATTR_KEEPALIVE), &vt);
 	conn.sKeepAlive = vt.bstrVal;
 	vt.Clear();
 
@@ -154,12 +130,14 @@ bool CConfigMgr::LoadConnection(CConnection& conn)
 		CString sRoute;
 		CComQIPtr<IXMLDOMElement> pElmRoute(pNode);
 
-		pElmRoute->getAttribute(L"Address", &vt);
+		pElmRoute->getAttribute(CComBSTR(CONFIG_ATTR_ADDRESS), &vt);
 		sRoute = vt.bstrVal;
 		vt.Clear();
 
-		pElmRoute->getAttribute(L"MaskBits", &vt);
-		sRoute.AppendFormat(L"/%s", vt.bstrVal); 
+		sRoute.AppendChar(L'/');
+
+		pElmRoute->getAttribute(CComBSTR(CONFIG_ATTR_MASKBITS), &vt);
+		sRoute.Append(vt.bstrVal); 
 		vt.Clear();
 
 		conn.asRoutes.Add(sRoute);
@@ -168,21 +146,20 @@ bool CConfigMgr::LoadConnection(CConnection& conn)
 	return true;
 }
 
-bool CConfigMgr::SaveConnection(CConnection &conn)
+bool CConfigMgr::SaveConnection(const CConnection &conn)
 {
 	ATLASSERT(m_pElmRoot);
 
-	CComBSTR bstrXPath(L"Connection[@Name=\"");
-	bstrXPath += conn.sName;
-	bstrXPath += "\"]";
+	CComBSTR bstrXPath;
+	bstrXPath.Attach(GetXPath(conn.sName));
 
 	CComPtr<IXMLDOMNode> pNode;
 	HRESULT hr = m_pElmRoot->selectSingleNode(bstrXPath, &pNode);
 	if ( FAILED(hr) || !pNode )
 	{
 		CComPtr<IXMLDOMElement> pElmNew;
-		m_pXml->createElement(L"Connection", &pElmNew);
-		pElmNew->setAttribute(L"Name", CComVariant(conn.sName));
+		m_pXml->createElement(CComBSTR(CONFIG_ELM_CONNECTION), &pElmNew);
+		pElmNew->setAttribute(CComBSTR(CONFIG_ATTR_NAME), CComVariant(conn.sName));
 
 		pNode = pElmNew;
 
@@ -192,9 +169,9 @@ bool CConfigMgr::SaveConnection(CConnection &conn)
 
 	CComQIPtr<IXMLDOMElement> pElm(pNode);
 	if ( !conn.sKeepAlive.IsEmpty() )
-		pElm->setAttribute(L"KeepAlive", CComVariant(conn.sKeepAlive));
+		pElm->setAttribute(CComBSTR(CONFIG_ATTR_KEEPALIVE), CComVariant(conn.sKeepAlive));
 	else
-		pElm->removeAttribute(L"KeepAlive");
+		pElm->removeAttribute(CComBSTR(CONFIG_ATTR_KEEPALIVE));
 
 	pNode.Release();
 	while ( SUCCEEDED(pElm->get_lastChild(&pNode)) && pNode )
@@ -207,13 +184,13 @@ bool CConfigMgr::SaveConnection(CConnection &conn)
 	for ( int i = 0; i < conn.asRoutes.GetSize(); i++ )
 	{
 		int slashPos = conn.asRoutes[i].Find(L'/');
-		CString sNet = conn.asRoutes[i].Left(slashPos);
-		CString sMask = conn.asRoutes[i].Mid(slashPos + 1);
+		CComBSTR sNet = conn.asRoutes[i].Left(slashPos);
+		CComBSTR sMask = conn.asRoutes[i].Mid(slashPos + 1);
 
 		CComPtr<IXMLDOMElement> pElmNew;
-		m_pXml->createElement(L"AddRoute", &pElmNew);
-		pElmNew->setAttribute(L"Address", CComVariant(sNet));
-		pElmNew->setAttribute(L"MaskBits", CComVariant(sMask));
+		m_pXml->createElement(CComBSTR(CONFIG_ELM_ADDROUTE), &pElmNew);
+		pElmNew->setAttribute(CComBSTR(CONFIG_ATTR_ADDRESS), CComVariant(sNet));
+		pElmNew->setAttribute(CComBSTR(CONFIG_ATTR_MASKBITS), CComVariant(sMask));
 
 		pNode = pElmNew;
 
@@ -231,6 +208,18 @@ bool CConfigMgr::SaveConnection(CConnection &conn)
 	return true;
 }
 
+BSTR CConfigMgr::GetXPath(LPCWSTR lpszConn)
+{
+	CComBSTR bstrXPath(CONFIG_ELM_CONNECTION);
+	bstrXPath += L"[@";
+	bstrXPath += CONFIG_ATTR_NAME;
+	bstrXPath += L"='";
+	bstrXPath += lpszConn;
+	bstrXPath += "']";
+
+	return bstrXPath.Detach();
+}
+
 void CConfigMgr::SetErrorFromCOM()
 {
 	CComPtr<IErrorInfo> pErr;
@@ -243,5 +232,5 @@ void CConfigMgr::SetErrorFromCOM()
 		LastError = bstrErr;
 	}
 	else
-		LastError = L"Unknown COM Error";
+		ATLENSURE(LastError.LoadString(IDS_ERR_COM));
 }

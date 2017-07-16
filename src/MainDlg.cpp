@@ -40,9 +40,9 @@ LRESULT CMainDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam
 	CConfigMgr config;
 	if ( !config.Init() )
 	{
-		MessageBox(config.LastError, L"Configuration Error", MB_OK | MB_ICONERROR);
+		ReportError(config.LastError, IDS_ERR_CONFIGURATION);
 		CloseDialog(0);
-		return 1;
+		return FALSE;
 	}
 
 	DoDataExchange(DDX_LOAD);
@@ -54,7 +54,10 @@ LRESULT CMainDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam
 
 	m_evt.Create(NULL, TRUE, FALSE, NULL);
 	ATLENSURE_SUCCEEDED(m_threadConNotify.AddHandle(m_evt, this, NULL));
-	::RasConnectionNotification((HRASCONN)INVALID_HANDLE_VALUE, m_evt, RASCN_Connection);
+
+	DWORD dwErr = ::RasConnectionNotification(static_cast<HRASCONN>(INVALID_HANDLE_VALUE), m_evt, RASCN_Connection);
+	if ( dwErr != ERROR_SUCCESS )
+		return !ReportError(GetErrorString(dwErr), IDS_ERR_RASCONNECTIONNOTIFICATION);
 
 	UpdateConnections();
 	UpdateUI();
@@ -112,16 +115,16 @@ LRESULT CMainDlg::OnUser(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& 
 			sConn.ReleaseBuffer();
 
 			if ( m_ConnMap.GetValueAt(m_ConnMap.FindKey(sConn)).m_hRasConn )
-				disc.AppendMenu(0, (UINT_PTR)0, sConn);
+				disc.AppendMenu(0, static_cast<UINT_PTR>(0), sConn);
 			else
-				conn.AppendMenu(0, (UINT_PTR)0, sConn);
+				conn.AppendMenu(0, static_cast<UINT_PTR>(0), sConn);
 		}
 
+		CString sNone((LPCWSTR)IDS_LBL_EMPTYLIST);
 		if ( conn.GetMenuItemCount() == 0 )
-			conn.AppendMenu(MF_GRAYED, (UINT_PTR)0, L"(none)");
-
+			conn.AppendMenu(MF_GRAYED, static_cast<UINT_PTR>(0), sNone);
 		if ( disc.GetMenuItemCount() == 0 )
-			disc.AppendMenu(MF_GRAYED, (UINT_PTR)0, L"(none)");
+			disc.AppendMenu(MF_GRAYED, static_cast<UINT_PTR>(0), sNone);
 
 		CPoint mouse;
 		::GetCursorPos(&mouse);
@@ -212,21 +215,10 @@ LRESULT CMainDlg::OnBnClickedSettings(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /
 {
 	CConfigMgr config;
 	config.Init();
-
-	bool bValid = config.LoadConfig(!config.ConfigExists());
-	if ( !bValid )
+	if ( !config.LoadConfig(!config.ConfigExists()) )
 	{
-		int resp = MessageBox(L"The configuration file is not present or is invalid.\n"
-								L"Do you want to create a new (empty) configuration file?", 
-								L"Invalid Configuration", MB_YESNO | MB_ICONEXCLAMATION);
-		if ( resp == IDYES )
-			bValid = config.LoadConfig(true);
-
-		if ( !bValid )
-		{
-			MessageBox(config.LastError, L"Configuration Error", MB_OK | MB_ICONERROR);
-			return 0;
-		}
+		if ( ReportError(_S(IDS_MSG_NEWCONFIG), IDS_ERR_INVALIDCONFIG, MB_YESNO | MB_ICONEXCLAMATION) == IDNO || !config.LoadConfig(true))
+			return ReportError(config.LastError, IDS_ERR_CONFIGURATION);
 	}
 
 	CSettingsDlg setdlg(m_ConnMap.GetValueAt(m_ConnMap.FindKey(m_sSelectedConnection)));
@@ -235,11 +227,8 @@ LRESULT CMainDlg::OnBnClickedSettings(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /
 
 	config.LoadConnection(setdlg.m_Conn);
 
-	if ( !setdlg.DoModal() )
-		return 0;
-
-	if ( !config.SaveConnection(setdlg.m_Conn) )
-		MessageBox(config.LastError, L"Error Saving Configuration", MB_OK | MB_ICONERROR);
+	if ( setdlg.DoModal() && !config.SaveConnection(setdlg.m_Conn) )
+		return ReportError(config.LastError, IDS_ERR_CONFIGURATION);
 
 	return 0;
 }
@@ -274,7 +263,7 @@ LRESULT CMainDlg::OnCbnSelchangeConnections(WORD /*wNotifyCode*/, WORD /*wID*/, 
 	return 0;
 }
 
-bool CMainDlg::IsVpnConnection(LPWSTR pszEntryName)
+bool CMainDlg::IsVpnConnection(LPCWSTR pszEntryName)
 {
 	bool ret = false;
 
@@ -305,7 +294,7 @@ bool CMainDlg::IsVpnConnection(LPWSTR pszEntryName)
 			ret = true;
 	}
 	else
-		MessageBox(GetErrorString(dwErr), L"RasGetEntryProperties Error", MB_OK | MB_ICONERROR);
+		ReportError(GetErrorString(dwErr), IDS_ERR_RASGETENTRYPROPERTIES);
 
 	heap.Free(mem);
 	return ret;
@@ -321,7 +310,7 @@ void CMainDlg::PopulateVPNList()
 
 	if ( dwErr != ERROR_BUFFER_TOO_SMALL )
 	{
-		MessageBox(GetErrorString(dwErr) , L"RasEnumEntries Error", MB_OK | MB_ICONERROR);
+		ReportError(GetErrorString(dwErr), IDS_ERR_RASENUMENTRIES);
 		return;
 	}
 
@@ -333,27 +322,25 @@ void CMainDlg::PopulateVPNList()
 	dwErr = ::RasEnumEntries(NULL, NULL, rasEntryNames, &dwCb, &dwEntries);
 	if ( dwErr == ERROR_SUCCESS )
 	{
-		for ( DWORD i = 0; i < dwEntries; i++ )
-			if ( IsVpnConnection(rasEntryNames[i].szEntryName) )
-			{
-				if ( m_ConnMap.FindKey(CString(rasEntryNames[i].szEntryName)) == -1 )
-				{
-					CConnection conn;
-					conn.sName = rasEntryNames[i].szEntryName;
-					m_ConnMap.Add(conn.sName, conn);
-					m_cboConnections.AddString(conn.sName);
-				}
-			}
-
 		CConfigMgr config;
-		if ( config.Init() && config.LoadConfig() )
+		bool configure = config.Init() && config.LoadConfig();
+
+		for ( DWORD i = 0; i < dwEntries; i++ )
 		{
-			for ( int i = 0; i < m_ConnMap.GetSize(); i++ )
-				config.LoadConnection(m_ConnMap.GetValueAt(i));
+			CString sName = rasEntryNames[i].szEntryName;
+			if ( IsVpnConnection(sName) && m_ConnMap.FindKey(sName) == -1 )
+			{
+				CConnection conn(sName);
+				if ( configure )
+					config.LoadConnection(conn);
+
+				m_ConnMap.Add(sName, conn);
+				m_cboConnections.AddString(sName);
+			}
 		}
 	}
 	else
-		MessageBox(GetErrorString(dwErr) , L"RasEnumEntries Error", MB_OK | MB_ICONERROR);
+		ReportError(GetErrorString(dwErr), IDS_ERR_RASENUMENTRIES);
 }
 
 void CMainDlg::UpdateConnections()
@@ -366,7 +353,7 @@ void CMainDlg::UpdateConnections()
 
 	if ( dwErr != ERROR_BUFFER_TOO_SMALL )
 	{
-		MessageBox(GetErrorString(dwErr) , L"RasEnumConnections Error", MB_OK | MB_ICONERROR);
+		ReportError(GetErrorString(dwErr), IDS_ERR_RASENUMCONNECTIONS);
 		return;
 	}
 
@@ -400,14 +387,14 @@ void CMainDlg::UpdateConnections()
 		}
 	}
 	else
-		MessageBox(GetErrorString(dwErr) , L"RasEnumConnections Error", MB_OK | MB_ICONERROR);
+		ReportError(GetErrorString(dwErr), IDS_ERR_RASENUMCONNECTIONS);
 }
 	
 void CMainDlg::UpdateUI()
 {
-	if (m_sSelectedConnection.IsEmpty())
+	if ( m_sSelectedConnection.IsEmpty() )
 	{
-		m_stcStatus.SetWindowText(L"");
+		m_stcStatus.SetWindowText(EMPTY_STRING);
 
 		m_btnConnect.EnableWindow(FALSE);
 		m_btnDisconnect.EnableWindow(FALSE);
@@ -421,19 +408,19 @@ void CMainDlg::UpdateUI()
 		m_btnSettings.EnableWindow();
 		m_btnProperties.EnableWindow();
 
-		if (m_ConnMap.GetValueAt(m_ConnMap.FindKey(m_sSelectedConnection)).m_hRasConn)
+		if ( m_ConnMap.GetValueAt(m_ConnMap.FindKey(m_sSelectedConnection)).m_hRasConn )
 		{
 			m_btnConnect.ShowWindow(SW_HIDE);
 			m_btnDisconnect.ShowWindow(SW_SHOW);
 
-			m_stcStatus.SetWindowText(L"Connected");
+			m_stcStatus.SetWindowText(_S(IDS_STATUS_CONNECTED));
 		}
 		else
 		{
 			m_btnConnect.ShowWindow(SW_SHOW);
 			m_btnDisconnect.ShowWindow(SW_HIDE);
 
-			m_stcStatus.SetWindowText(L"");
+			m_stcStatus.SetWindowText(EMPTY_STRING);
 		}
 	}
 }
@@ -441,30 +428,26 @@ void CMainDlg::UpdateUI()
 void CMainDlg::Connect(CConnection& conn)
 {
 	RASENTRY RasEntry = {0};
-	BOOL bDoLogon = true;
-
 	RasEntry.dwSize = sizeof(RASENTRY);
+
 	DWORD dwErr = ::RasGetEntryProperties(NULL, conn.sName, &RasEntry, &RasEntry.dwSize, NULL, NULL);
 	if ( dwErr != ERROR_SUCCESS )
 	{
-		MessageBox(GetErrorString(dwErr), L"RasGetEntryProperties Error", MB_OK | MB_ICONERROR);
+		ReportError(GetErrorString(dwErr), IDS_ERR_RASGETENTRYPROPERTIES);
 		return;
 	}
 
-	if ( (RasEntry.dwfOptions & RASEO_UseLogonCredentials) == RASEO_UseLogonCredentials )
-		bDoLogon = false;
+	BOOL bDoLogon = (RasEntry.dwfOptions & RASEO_UseLogonCredentials) != RASEO_UseLogonCredentials;
+	BOOL bPasswordSaved = FALSE;
 
-	// Use RasDial to dial connection
 	RASDIALPARAMS RasDialParams = {0};
-	BOOL bPasswordSaved = false;
-
 	RasDialParams.dwSize = sizeof(RASDIALPARAMS);
 	ATLENSURE_SUCCEEDED(::StringCchCopy(RasDialParams.szEntryName, RAS_MaxEntryName, conn.sName));
 
 	dwErr = ::RasGetEntryDialParams(NULL, &RasDialParams, &bPasswordSaved);
 	if ( dwErr != ERROR_SUCCESS )
 	{
-		MessageBox(GetErrorString(dwErr), L"RasDialGetEntryDialParams Error", MB_OK | MB_ICONERROR);
+		ReportError(GetErrorString(dwErr), IDS_ERR_RASDIALGETENTRYDIALPARAMS);
 		return;
 	}
 
@@ -474,7 +457,6 @@ void CMainDlg::Connect(CConnection& conn)
 		logondlg.m_sUser = RasDialParams.szUserName;
 		logondlg.m_sConnection = m_sSelectedConnection;
 		
-		// user pressed cancel in logon dialog.  bail out.
 		if ( !logondlg.DoModal() )
 			return;
 
@@ -482,12 +464,12 @@ void CMainDlg::Connect(CConnection& conn)
 		ATLENSURE_SUCCEEDED(::StringCchCopy(RasDialParams.szPassword, PWLEN, logondlg.m_sPass));
 	}
 
-	RasDialParams.dwCallbackId = (ULONG_PTR)this;
+	RasDialParams.dwCallbackId = reinterpret_cast<ULONG_PTR>(this);
 
 	dwErr = ::RasDial(NULL, NULL, &RasDialParams, 2, &CMainDlg::RasDialCallback, &conn.m_hRasConn);
 	if ( dwErr != ERROR_SUCCESS )
 	{
-		MessageBox(GetErrorString(dwErr), L"RasDial Error", MB_OK | MB_ICONERROR);
+		ReportError(GetErrorString(dwErr), IDS_ERR_RASDIAL);
 		return;
 	}
 
@@ -523,9 +505,10 @@ void CMainDlg::PostConnect(CConnection& conn)
 	if ( conn.asRoutes.GetSize() > 0 )
 	{
 		if ( conn.sName == m_sSelectedConnection )
-			m_stcStatus.SetWindowText(L"Adding static routes...");
-
-		::Sleep(1000);
+		{
+			m_stcStatus.SetWindowText(_S(IDS_STATUS_ADDINGROUTES));
+			::Sleep(600);
+		}
 
 		RASPPPIP rasip = {0};
 		rasip.dwSize = sizeof(rasip);
@@ -535,7 +518,7 @@ void CMainDlg::PostConnect(CConnection& conn)
 		dwErr = ::RasGetProjectionInfo(conn.m_hRasConn, RASP_PppIp, &rasip, &dwCb);
 		if ( dwErr != ERROR_SUCCESS )
 		{
-			MessageBox(GetErrorString(dwErr), L"RasGetProjectionInfo Error", MB_OK | MB_ICONERROR);
+			ReportError(GetErrorString(dwErr), IDS_ERR_RASGETPROJECTIONINFO);
 			return;
 		}
 
@@ -545,7 +528,7 @@ void CMainDlg::PostConnect(CConnection& conn)
 		dwErr = ::GetIpForwardTable(NULL, &dwCb, FALSE);
 		if ( dwErr != ERROR_INSUFFICIENT_BUFFER )
 		{
-			MessageBox(GetErrorString(dwErr), L"GetIpForwardTable Error", MB_OK | MB_ICONERROR);
+			ReportError(GetErrorString(dwErr), IDS_ERR_GETIPFORWARDTABLE);
 			return;
 		}
 
@@ -568,7 +551,7 @@ void CMainDlg::PostConnect(CConnection& conn)
 					dwErr = ::DeleteIpForwardEntry(&route);
 					if ( dwErr != ERROR_SUCCESS )
 					{
-						MessageBox(GetErrorString(dwErr), L"DeleteIpForwardEntry Error", MB_OK | MB_ICONERROR);
+						ReportError(GetErrorString(dwErr), IDS_ERR_DELETEIPFORWARDENTRY);
 						//return;
 					}
 
@@ -579,7 +562,7 @@ void CMainDlg::PostConnect(CConnection& conn)
 		}
 		else
 		{
-			MessageBox(GetErrorString(dwErr), L"GetIpForwardTable Error", MB_OK | MB_ICONERROR);
+			ReportError(GetErrorString(dwErr), IDS_ERR_GETIPFORWARDTABLE);
 			//return;
 		}
 
@@ -587,8 +570,8 @@ void CMainDlg::PostConnect(CConnection& conn)
 		{
 			for ( int i = 0; i < conn.asRoutes.GetSize(); i++ )
 			{
-				CString sNet = conn.asRoutes[i].Left(conn.asRoutes[i].Find(L"/"));
-				CString sMask = conn.asRoutes[i].Mid(conn.asRoutes[i].Find(L"/") + 1);
+				CString sNet = conn.asRoutes[i].Left(conn.asRoutes[i].Find(L'/'));
+				CString sMask = conn.asRoutes[i].Mid(conn.asRoutes[i].Find(L'/') + 1);
 
 				route.dwForwardDest = ::inet_addr(CW2A(sNet));
 				route.dwForwardMask = ::htonl(conn.ConvertBitsToMask(::StrToInt(sMask)));
@@ -598,7 +581,7 @@ void CMainDlg::PostConnect(CConnection& conn)
 				dwErr = ::CreateIpForwardEntry(&route);
 				if ( dwErr != ERROR_SUCCESS )
 				{
-					MessageBox(GetErrorString(dwErr), L"CreateIpForwardEntry Error", MB_OK | MB_ICONERROR);
+					ReportError(GetErrorString(dwErr), IDS_ERR_CREATEIPFORWARDENTRY);
 					//return;
 				}
 			}
@@ -617,7 +600,7 @@ void CMainDlg::PostConnect(CConnection& conn)
 	DWORD dwErr = ::RasConnectionNotification(conn.m_hRasConn, conn.m_evt, RASCN_Disconnection);
 	if ( dwErr != ERROR_SUCCESS )
 	{
-		MessageBox(GetErrorString(dwErr), L"RasConnectionNotification Error", MB_OK | MB_ICONERROR);
+		ReportError(GetErrorString(dwErr), IDS_ERR_RASCONNECTIONNOTIFICATION);
 		//return;
 	}
 
@@ -637,10 +620,9 @@ void CMainDlg::RasDialog(CString& sConnName)
 	else
 		lpszConn = sConnName.GetBuffer(0);
 
-	//if ( !::RasEntryDlg(NULL, lpszConn, &red) && red.dwError != ERROR_SUCCESS )
-	//	MessageBox(GetErrorString(red.dwError), L"RasEntryDlg Error", MB_OK | MB_ICONERROR);
+	if ( !::RasEntryDlg(NULL, lpszConn, &red) && red.dwError != ERROR_SUCCESS )
+		ReportError(GetErrorString(red.dwError), IDS_ERR_RASENTRYDLG);
 
-	::RasEntryDlg(NULL, lpszConn, &red);
 }
 
 void CMainDlg::Minimize()
@@ -659,11 +641,11 @@ void CMainDlg::NotifyIcon(bool bShow)
 	NOTIFYICONDATA nid = {0};
 	nid.cbSize = sizeof(NOTIFYICONDATA);
 	nid.hWnd = m_hWnd;
-	nid.uID = 69;
+	nid.uID = 75;
 	nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
 	nid.uCallbackMessage = WM_USER;
 	nid.hIcon = icon.m_hIcon;
-	::lstrcpy(nid.szTip, L"Double-click to restore");
+	ATLENSURE_SUCCEEDED(::StringCchCopy(nid.szTip, _countof(nid.szTip), _S(IDS_NIF_TIP)));
 
 	::Shell_NotifyIcon(bShow ? NIM_ADD : NIM_DELETE, &nid);
 }
@@ -684,30 +666,32 @@ void CMainDlg::CreateMenu()
 	m_menu.GetSubMenu(0).SetMenuDefaultItem(4, TRUE);
 }
 
+int CMainDlg::ReportError(LPCWSTR szErr, UINT_PTR nRes, UINT nType)
+{
+	return MessageBoxW(szErr, _S(nRes), nType);
+}
+
 CString CMainDlg::GetErrorString(DWORD dwErr)
 {
 	dwErr = dwErr == 0 ? ::GetLastError() : dwErr;
 	CString sErr;
-
-	LPVOID lpMsgBuf = NULL;
+	LPWSTR lpMsgBuf = NULL;
 
 	if ( dwErr >= RASBASE && dwErr <= RASBASEEND )
 	{
 		::RasGetErrorString(dwErr, sErr.GetBuffer(512), 512);
 		sErr.ReleaseBuffer();
 	}
-	else if ( ::FormatMessage( 
-			FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-			NULL, dwErr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), 
-			(LPWSTR)&lpMsgBuf, 0, NULL) )
+	else if ( ::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+	                          NULL, dwErr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&lpMsgBuf), 0, NULL) )
 	{
-		sErr = (LPWSTR)lpMsgBuf;
+		sErr = lpMsgBuf;
 		::LocalFree(lpMsgBuf);
 	}
 	else
-		sErr = L"Unknown Error";
+		ATLENSURE(sErr.LoadString(IDS_ERR_UNKNOWN));
 
-	sErr.AppendFormat(L"\n\nError code: %d (0x%x)", dwErr, dwErr);
+	sErr.AppendFormat(IDS_FMT_ERRORCODE, static_cast<long>(dwErr), dwErr);
 
 	return sErr;
 }
@@ -730,17 +714,11 @@ void CALLBACK CMainDlg::RasDialCallback(ULONG_PTR dwCallbackId, DWORD /*dwSubEnt
 	CString sMsg;
 	switch ( RasConnState )
 	{
-		case RASCS_OpenPort : sMsg = L"Opening port..."; break;
-		//case RASCS_PortOpened : sMsg = L"Port opened..."; break;
-		case RASCS_ConnectDevice : sMsg = L"Connecting to VPN server..."; break;
-		//case RASCS_DeviceConnected : sMsg = L"Connected to VPN server..."; break;
-		case RASCS_Authenticate : sMsg = L"Verifying user name and password..."; break;
-		//case RASCS_Authenticated : sMsg = L"Authenticated..."; break;
-		case RASCS_AuthProject : sMsg = L"Registering computer on the remote network..."; break;
-		//case RASCS_Projected : sMsg = L"Registered..."; break;
-		case RASCS_Connected : sMsg = L"Connected"; break;
-		//case RASCS_Disconnected : sMsg = L"Disconnected."; break;
-		//default : CString su; su.Format(L"%d", RasConnState); ::MessageBox(NULL, su, L"", MB_OK); 
+		case RASCS_OpenPort      : ATLENSURE(sMsg.LoadString(IDS_STATUS_OPENINGPORT)); break;
+		case RASCS_ConnectDevice : ATLENSURE(sMsg.LoadString(IDS_STATUS_CONNECTING)); break;
+		case RASCS_Authenticate  : ATLENSURE(sMsg.LoadString(IDS_STATUS_AUTHENTICATING)); break;
+		case RASCS_AuthProject   : ATLENSURE(sMsg.LoadString(IDS_STATUS_PROJECTING)); break;
+		case RASCS_Connected     : ATLENSURE(sMsg.LoadString(IDS_STATUS_CONNECTED)); break;
 	}
 
 	if ( !sMsg.IsEmpty() && pConn->sName == pMainDlg->m_sSelectedConnection )

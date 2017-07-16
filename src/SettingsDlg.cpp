@@ -5,9 +5,11 @@
 
 LRESULT CSettingsDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
 {
-	CenterWindow(GetParent());
+	CString sTitle;
+	sTitle.Format(IDS_FMT_SETTINGSTITLE, m_Conn.sName.GetString());
+	SetWindowText(sTitle);
 
-	SetWindowText(m_Conn.sName + L" Dial Settings");
+	CenterWindow(GetParent());
 	DoDataExchange(DDX_LOAD);
 
 	for ( int i = 0; i < m_Conn.asRoutes.GetSize(); i++ )
@@ -114,8 +116,8 @@ LRESULT CSettingsDlg::OnBnClickedRemove(WORD /*wNotifyCode*/, WORD /*wID*/, HWND
 	CString sSel;
 	m_lstRoutes.GetText(m_lstRoutes.GetCurSel(), sSel);
 
-	CString sNet = sSel.Left(sSel.Find(L"/"));
-	CString sMask = sSel.Mid(sSel.Find(L"/") + 1);
+	CString sNet = sSel.Left(sSel.Find(L'/'));
+	CString sMask = sSel.Mid(sSel.Find(L'/') + 1);
 
 	u_long ulNet = ::ntohl(::inet_addr(CW2A(sNet)));
 	u_long ulMask = CConnection::ConvertBitsToMask(StrToInt(sMask));

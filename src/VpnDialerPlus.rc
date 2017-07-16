@@ -13,13 +13,11 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.S.) resources
+// English (United States) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
-#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
-#endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -54,6 +52,7 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDR_ICON_MAIN           ICON                    "res\\VpnDialerPlus.ico"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -116,8 +115,8 @@ CAPTION "About VPN Dialer+"
 FONT 8, "MS Shell Dlg 2", 0, 0, 0x0
 BEGIN
     GROUPBOX        "",IDC_STATIC,7,7,115,88
-    CTEXT           "VPN Dialer+ v1.1.0\n\n© 2005-2007\nIngram Partners Inc",IDC_STATIC,25,52,78,41
-    ICON            IDR_ICON_MAIN,IDC_STATIC,55,19,21,20
+    CTEXT           "VPN Dialer+ v1.2.0\n\n© 2005-2017\nClinton Ingram",IDC_STATIC,25,52,78,41
+    ICON            IDR_ICON_MAIN,IDC_STATIC,55,19,20,20
     DEFPUSHBUTTON   "OK",IDOK,130,81,50,14
 END
 
@@ -128,30 +127,29 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,1,0,0
- PRODUCTVERSION 1,1,0,0
+ FILEVERSION 1,2,0,0
+ PRODUCTVERSION 1,2,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
 #else
  FILEFLAGS 0x0L
 #endif
- FILEOS 0x4L
- FILETYPE 0x2L
+ FILEOS 0x40000L
+ FILETYPE 0x1L
  FILESUBTYPE 0x0L
 BEGIN
     BLOCK "StringFileInfo"
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "CompanyName", "Ingram Partners Inc"
             VALUE "FileDescription", "VPN Dialer+"
-            VALUE "FileVersion", "1, 1, 0, 0"
+            VALUE "FileVersion", "1.2.0.0"
             VALUE "InternalName", "VPN Dialer+"
-            VALUE "LegalCopyright", "Copyright (c) 2005-2007 Ingram Partners Inc"
+            VALUE "LegalCopyright", "Copyright (c) 2005-2017 Clinton Ingram"
             VALUE "OriginalFilename", "VpnDialerPlus.exe"
             VALUE "ProductName", "VPN Dialer+"
-            VALUE "ProductVersion", "1, 1, 0, 0"
+            VALUE "ProductVersion", "1.2.0.0"
         END
     END
     BLOCK "VarFileInfo"
@@ -167,14 +165,16 @@ END
 //
 
 CONFIG.XML              XML                     "res\\config.xml"
+
 CONFIG.XSD              XML                     "res\\config.xsd"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // Menu
 //
 
-IDR_MENU_POPUP MENU 
+IDR_MENU_POPUP MENU
 BEGIN
     POPUP "Popup"
     BEGIN
@@ -187,8 +187,8 @@ BEGIN
             MENUITEM "(none)",                      ID_DISCONNECT, GRAYED
         END
         MENUITEM SEPARATOR
-        MENUITEM "About",                       ID_APP_ABOUT
-        MENUITEM "Open VPN Dialer+",            ID_FILE_OPEN
+        MENUITEM "&About",                      ID_APP_ABOUT
+        MENUITEM "&Open VPN Dialer+",           ID_FILE_OPEN
         MENUITEM "E&xit",                       IDCANCEL
     END
 END
@@ -199,12 +199,49 @@ END
 // String Table
 //
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDR_ICON_MAIN           "VPN Dialer+"
+    IDS_ERR_MSXML6          "Failed to create MSXML2.DOMDocument.6.0"
+    IDS_ERR_COM             "Unknown COM Error"
+    IDS_ERR_RASENUMENTRIES  "RasEnumEntries Error"
+    IDS_ERR_RASENTRYDLG     "RasEntryDlg Error"
+    IDS_ERR_RASGETENTRYPROPERTIES "RasGetEntryProperties Error"
+    IDS_ERR_RASENUMCONNECTIONS "RasEnumConnections Error"
+    IDS_ERR_RASDIALGETENTRYDIALPARAMS "RasDialGetEntryDialParams Error"
 END
 
-#endif    // English (U.S.) resources
+STRINGTABLE
+BEGIN
+    IDS_ERR_RASDIAL         "RasDial Error"
+    IDS_ERR_RASCONNECTIONNOTIFICATION "RasConnectionNotification Error"
+    IDS_ERR_RASGETPROJECTIONINFO "RasGetProjectionInfo Error"
+    IDS_ERR_GETIPFORWARDTABLE "GetIpForwardTable Error"
+    IDS_ERR_CREATEIPFORWARDENTRY "CreateIpForwardEntry Error"
+    IDS_ERR_DELETEIPFORWARDENTRY "DeleteIpForwardEntry Error"
+    IDS_ERR_CONFIGURATION   "Configuration Error"
+    IDS_ERR_UNKNOWN         "Unknown Error"
+    IDS_ERR_INVALIDCONFIG   "Invalid Configuration"
+    IDS_MSG_NEWCONFIG       "The configuration file is not valid.\nDo you want to create a new (empty) configuration file?"
+    IDS_FMT_ERRORCODE       "\nError code: %d (0x%x)"
+    IDS_FMT_LOGONTITLE      "%s Authentication"
+    IDS_FMT_SETTINGSTITLE   "%s Dial Settings"
+    IDS_STATUS_OPENINGPORT  "Opening port..."
+    IDS_STATUS_CONNECTING   "Connecting to VPN server..."
+    IDS_STATUS_AUTHENTICATING "Verifying user name and password..."
+END
+
+STRINGTABLE
+BEGIN
+    IDS_STATUS_PROJECTING   "Registering computer on the remote network..."
+    IDS_STATUS_ADDINGROUTES "Adding static routes..."
+    IDS_STATUS_CONNECTED    "Connected"
+    IDS_STATUS_DISCONNECTED "Disconnected"
+    IDS_NIF_TIP             "Double-click to restore"
+    IDS_LBL_EMPTYLIST       "(none)"
+END
+
+#endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

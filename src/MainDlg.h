@@ -62,7 +62,7 @@ public:
 
 	void CloseDialog(int nVal);
 
-	bool IsVpnConnection(LPTSTR pszEntryName);
+	bool IsVpnConnection(LPCWSTR pszEntryName);
 	void PopulateVPNList();
 	void UpdateConnections();
 	void UpdateUI();
@@ -73,6 +73,7 @@ public:
 	void Minimize();
 	void NotifyIcon(bool bShow);
 	void CreateMenu();
+	int  ReportError(LPCWSTR szErr, UINT_PTR nRes, UINT nType = MB_OK | MB_ICONERROR);
 	static CString GetErrorString(DWORD dwErr);
 
 	// RasDialFunc2 
@@ -83,6 +84,8 @@ public:
 	HRESULT CloseHandle(HANDLE hObject);
 
 private:
+	LPCWSTR EMPTY_STRING = L"";
+
 	CWorkerThread<> m_threadConNotify;
 	CWorkerThread<> m_threadDisNotify;
 	CWorkerThread<> m_threadKeepAlive;
