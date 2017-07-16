@@ -17,13 +17,9 @@ int Run(LPWSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT)
 		return 0;
 	}
 
-	if ( nCmdShow == SW_SHOWMINNOACTIVE )
-	{
-		dlgMain.ShowWindow(SW_HIDE);
-		dlgMain.Minimize(false);
-	}
-	else
-		dlgMain.ShowWindow(nCmdShow);
+	dlgMain.ShowWindow(nCmdShow);
+	if ( nCmdShow == SW_SHOWMINIMIZED || nCmdShow == SW_SHOWMINNOACTIVE )
+		dlgMain.Minimize();
 
 	int nRet = theLoop.Run();
 

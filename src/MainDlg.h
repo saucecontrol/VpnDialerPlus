@@ -70,7 +70,7 @@ public:
 	void Disconnect(CConnection& conn);
 	void PostConnect(CConnection& conn);
 	void RasDialog(CString& sConnName);
-	void Minimize(bool bShow);
+	void Minimize();
 	void NotifyIcon(bool bShow);
 	void CreateMenu();
 	static CString GetErrorString(DWORD dwErr);

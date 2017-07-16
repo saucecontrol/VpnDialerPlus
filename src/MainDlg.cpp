@@ -69,9 +69,8 @@ LRESULT CMainDlg::OnSysCommand(UINT /*uMsg*/, WPARAM wParam, LPARAM /*lParam*/, 
 
 	if ( wParam == SC_MINIMIZE )
 	{
-		Minimize(true);
-
 		bHandled = TRUE;
+		Minimize();
 	}
 
 	return 0;
@@ -86,16 +85,15 @@ LRESULT CMainDlg::OnUser(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& 
 	{
 		m_bDblClick = true;
 	}
-	else if ( lParam == WM_LBUTTONUP )
+	else if ( lParam == WM_LBUTTONUP && m_bDblClick )
 	{
-		if ( m_bDblClick )
-		{
-			m_bDblClick = false;
-			OnMenuOpen(0, 0, NULL, bHandled);
-		}
+		m_bDblClick = false;
+		OnMenuOpen(0, 0, NULL, bHandled);
 	}
 	else if ( lParam == WM_RBUTTONUP )
 	{
+		bHandled = TRUE;
+
 		CMenuHandle popup = m_menu.GetSubMenu(0);
 		CMenuHandle conn = popup.GetSubMenu(0);
 		CMenuHandle disc = popup.GetSubMenu(1);
@@ -133,8 +131,6 @@ LRESULT CMainDlg::OnUser(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& 
 
 		// KB 135788
 		PostMessage(WM_NULL);
-
-		bHandled = TRUE;
 	}
 
 	return 0;
@@ -167,13 +163,12 @@ LRESULT CMainDlg::OnMenuCommand(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOO
 
 LRESULT CMainDlg::OnMenuOpen(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& bHandled)
 {
-	NotifyIcon(false);
-	ShowWindow(SW_SHOW);
-	::SetForegroundWindow(m_hWnd);
-
 	bHandled = TRUE;
 
-	return 0;
+	NotifyIcon(false);
+	ShowWindow(SW_SHOW);
+
+	return ::SetForegroundWindow(m_hWnd);
 }
 
 LRESULT CMainDlg::OnAppAbout(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
@@ -648,27 +643,8 @@ void CMainDlg::RasDialog(CString& sConnName)
 	::RasEntryDlg(NULL, lpszConn, &red);
 }
 
-void CMainDlg::Minimize(bool bShow)
+void CMainDlg::Minimize()
 {
-	if ( bShow )
-	{
-		CWindow tray = ::FindWindow(L"Shell_TrayWnd", NULL);
-		if ( tray.m_hWnd )
-		{
-			CWindow nawin = ::FindWindowEx(tray, NULL, L"TrayNotifyWnd", NULL);
-			if ( nawin.m_hWnd )
-			{
-				CRect myrect;
-				CRect narect;
-
-				GetWindowRect(&myrect);
-				nawin.GetWindowRect(&narect);
-
-				::DrawAnimatedRects(m_hWnd, IDANI_CAPTION, &myrect, &narect);
-			}
-		}
-	}
-
 	NotifyIcon(true);
 	ShowWindow(SW_HIDE);
 
