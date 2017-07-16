@@ -211,6 +211,12 @@ LRESULT CMainDlg::OnBnClickedDisconnect(WORD /*wNotifyCode*/, WORD /*wID*/, HWND
 	return 0;
 }
 
+LRESULT CMainDlg::OnBnClickedProperties(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
+{
+	RasDialog(m_sSelectedConnection);
+	return 0;
+}
+
 LRESULT CMainDlg::OnBnClickedSettings(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
 	CConfigMgr config;
@@ -230,12 +236,6 @@ LRESULT CMainDlg::OnBnClickedSettings(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /
 	if ( setdlg.DoModal() && !config.SaveConnection(setdlg.m_Conn) )
 		return ReportError(config.LastError, IDS_ERR_CONFIGURATION);
 
-	return 0;
-}
-
-LRESULT CMainDlg::OnBnClickedProperties(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
-{
-	RasDialog(m_sSelectedConnection);
 	return 0;
 }
 
@@ -570,11 +570,13 @@ void CMainDlg::PostConnect(CConnection& conn)
 		{
 			for ( int i = 0; i < conn.asRoutes.GetSize(); i++ )
 			{
-				CString sNet = conn.asRoutes[i].Left(conn.asRoutes[i].Find(L'/'));
-				CString sMask = conn.asRoutes[i].Mid(conn.asRoutes[i].Find(L'/') + 1);
+				IN_ADDR iaNet, iaMask;
+				LPCWSTR szRoute = conn.asRoutes[i];
+				::RtlIpv4StringToAddress(szRoute, TRUE, &szRoute, &iaNet);
+				::ConvertLengthToIpv4Mask(::StrToInt(szRoute + 1), &iaMask.s_addr);
 
-				route.dwForwardDest = ::inet_addr(CW2A(sNet));
-				route.dwForwardMask = ::htonl(conn.ConvertBitsToMask(::StrToInt(sMask)));
+				route.dwForwardDest = iaNet.s_addr;
+				route.dwForwardMask = iaMask.s_addr;
 				route.dwForwardType = MIB_IPNET_TYPE_DYNAMIC;
 				route.dwForwardProto = MIB_IPPROTO_NETMGMT;
 

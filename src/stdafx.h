@@ -45,12 +45,14 @@ extern CAppModule _Module;
 
 #include <iphlpapi.h>
 #include <icmpapi.h>
+#include <mstcpip.h>
 
 #include <msxml6.h>
 
 #pragma comment(lib, "rasapi32.lib")
 #pragma comment(lib, "rasdlg.lib")
 #pragma comment(lib, "iphlpapi.lib")
+#pragma comment(lib, "ntdll.lib")
 #pragma comment(lib, "ws2_32.lib")
 
 #pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' publicKeyToken='6595b64144ccf1df' processorArchitecture='*' language='*'\"")

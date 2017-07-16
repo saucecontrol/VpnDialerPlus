@@ -7,24 +7,6 @@
 
 #include "ConfigMgr.h"
 
-u_long CConnection::ConvertBitsToMask(int nBits)
-{
-	u_long ulMask = 0;
-	for ( int i = 0; i < nBits; i++ )
-		ulMask = _lrotr(++ulMask, 1);
-
-	return ulMask;
-}
-
-int CConnection::ConvertMaskToBits(u_long ulMask)
-{
-	int nBits = 0;
-	while ( ((ulMask = _lrotl(ulMask, 1)) & 1) == 1 )
-		nBits++;
-
-	return nBits;
-}
-
 bool CConfigMgr::Init()
 {
 	if ( m_pXml )

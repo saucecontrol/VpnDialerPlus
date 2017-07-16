@@ -30,8 +30,8 @@ public:
 		COMMAND_ID_HANDLER(ID_FILE_OPEN, OnMenuOpen)
 		COMMAND_HANDLER(IDC_BUTTON_CONNECT, BN_CLICKED, OnBnClickedConnect)
 		COMMAND_HANDLER(IDC_BUTTON_DISCONNECT, BN_CLICKED, OnBnClickedDisconnect)
-		COMMAND_HANDLER(IDC_BUTTON_SETTINGS, BN_CLICKED, OnBnClickedSettings)
 		COMMAND_HANDLER(IDC_BUTTON_PROPERTIES, BN_CLICKED, OnBnClickedProperties)
+		COMMAND_HANDLER(IDC_BUTTON_SETTINGS, BN_CLICKED, OnBnClickedSettings)
 		COMMAND_HANDLER(IDC_BUTTON_NEW, BN_CLICKED, OnBnClickedNew)
 		COMMAND_HANDLER(IDC_COMBO_CONNECTIONS, CBN_SELCHANGE, OnCbnSelchangeConnections)
 	END_MSG_MAP()
@@ -39,8 +39,8 @@ public:
 	BEGIN_DDX_MAP(CMainDlg)
 		DDX_CONTROL_HANDLE(IDC_BUTTON_CONNECT, m_btnConnect);
 		DDX_CONTROL_HANDLE(IDC_BUTTON_DISCONNECT, m_btnDisconnect);
-		DDX_CONTROL_HANDLE(IDC_BUTTON_SETTINGS, m_btnSettings);
 		DDX_CONTROL_HANDLE(IDC_BUTTON_PROPERTIES, m_btnProperties);
+		DDX_CONTROL_HANDLE(IDC_BUTTON_SETTINGS, m_btnSettings);
 		DDX_CONTROL_HANDLE(IDC_BUTTON_NEW, m_btnNew);
 		DDX_CONTROL_HANDLE(IDC_COMBO_CONNECTIONS, m_cboConnections);
 		DDX_CONTROL_HANDLE(IDC_STATIC_STATUS, m_stcStatus);
@@ -95,8 +95,8 @@ private:
 
 	CButton m_btnConnect;
 	CButton m_btnDisconnect;
-	CButton m_btnSettings;
 	CButton m_btnProperties;
+	CButton m_btnSettings;
 	CButton m_btnNew;
 	CComboBox m_cboConnections;
 	CStatic m_stcStatus;

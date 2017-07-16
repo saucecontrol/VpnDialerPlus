@@ -24,9 +24,6 @@ public:
 
 	explicit CConnection(const CString& name) : sName(name), m_hRasConn(NULL), m_bConnected(false) {}
 
-	static u_long ConvertBitsToMask(int nBits);
-	static int ConvertMaskToBits(u_long ulMask);
-
 	CString sName;
 	CString sKeepAlive;
 	CSimpleArray<CString> asRoutes;

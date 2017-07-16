@@ -19,8 +19,8 @@ LRESULT CSettingsDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lP
 
 	if ( !m_Conn.sKeepAlive.IsEmpty() )
 	{
-		u_long ulKeepAlive = ::ntohl(::inet_addr(CW2A(m_Conn.sKeepAlive)));
-		m_ipKeepAlive.SetAddress(ulKeepAlive);
+		IPAddr ulKeepAlive = ::inet_addr(CW2A(m_Conn.sKeepAlive));
+		m_ipKeepAlive.SetAddress(::ntohl(ulKeepAlive));
 	}
 
 	return TRUE;
@@ -36,13 +36,14 @@ LRESULT CSettingsDlg::OnClickedOK(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWn
 		m_Conn.asRoutes.Add(sItem);
 	}
 
-	u_long ulKeepAlive;
+	IPAddr ulKeepAlive;
 	m_ipKeepAlive.GetAddress(&ulKeepAlive);
 
+	m_Conn.sKeepAlive.Empty();
 	if ( ulKeepAlive != 0 )
 	{
-		in_addr iaKeepAlive;
-		iaKeepAlive.S_un.S_addr = ::htonl(ulKeepAlive);
+		IN_ADDR iaKeepAlive;
+		iaKeepAlive.s_addr = ::htonl(ulKeepAlive);
 
 		m_Conn.sKeepAlive = CA2W(::inet_ntoa(iaKeepAlive));
 	}
@@ -81,25 +82,24 @@ LRESULT CSettingsDlg::OnBnClickedAdd(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*
 {
 	m_btnAdd.EnableWindow(FALSE);
 
-	u_long ulNet, ulMask, ulMaskT;
+	IPAddr ulNet, ulMask, ulMaskT;
 	m_ipNet.GetAddress(&ulNet);
 	m_ipMask.GetAddress(&ulMaskT);
 
 	ulMask = 0;
-	while ( (ulMaskT & 0x80000000) == 0x80000000 )
+	while ( (ulMaskT & 0x80000000UL) == 0x80000000UL )
 	{
-		ulMask >>= 1;
-		ulMask |= 0x80000000;
+		ulMask = ulMask >> 1 | 0x80000000UL;
 		ulMaskT <<= 1;
 	}
 	ulNet &= ulMask;
 
-	in_addr iaNet;
-	iaNet.S_un.S_addr = ::htonl(ulNet);
+	IN_ADDR iaNet, iaMask;
+	iaNet.s_addr = ::htonl(ulNet);
+	::ConvertIpv4MaskToLength(::htonl(ulMask), &iaMask.s_net);
 
-	CString sRoute = CA2W(::inet_ntoa(iaNet));
-	sRoute.AppendFormat(L"/%d", CConnection::ConvertMaskToBits(ulMask));
-
+	CString sRoute;
+	sRoute.Format(L"%s/%d", CA2W(::inet_ntoa(iaNet)).m_psz, static_cast<int>(iaMask.s_net));
 	m_lstRoutes.AddString(sRoute);
 
 	m_ipNet.ClearAddress();
@@ -116,14 +116,13 @@ LRESULT CSettingsDlg::OnBnClickedRemove(WORD /*wNotifyCode*/, WORD /*wID*/, HWND
 	CString sSel;
 	m_lstRoutes.GetText(m_lstRoutes.GetCurSel(), sSel);
 
-	CString sNet = sSel.Left(sSel.Find(L'/'));
-	CString sMask = sSel.Mid(sSel.Find(L'/') + 1);
+	IN_ADDR iaNet, iaMask;
+	LPCWSTR szRoute = sSel;
+	::RtlIpv4StringToAddress(szRoute, TRUE, &szRoute, &iaNet);
+	::ConvertLengthToIpv4Mask(::StrToInt(szRoute + 1), &iaMask.s_addr);
 
-	u_long ulNet = ::ntohl(::inet_addr(CW2A(sNet)));
-	u_long ulMask = CConnection::ConvertBitsToMask(StrToInt(sMask));
-
-	m_ipNet.SetAddress(ulNet);
-	m_ipMask.SetAddress(ulMask);
+	m_ipNet.SetAddress(::ntohl(iaNet.s_addr));
+	m_ipMask.SetAddress(::ntohl(iaMask.s_addr));
 
 	m_lstRoutes.DeleteString(m_lstRoutes.GetCurSel());
 
