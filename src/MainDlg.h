@@ -2,6 +2,9 @@
 
 #include "ConfigMgr.h"
 
+const UINT WM_VPNDIALERPLUS = ::RegisterWindowMessage(L"VPN Dialer+ Restore");
+const UINT WM_TASKBARCREATED = ::RegisterWindowMessage(L"TaskbarCreated");
+
 class CMainDlg : public CDialogImpl<CMainDlg>, public CUpdateUI<CMainDlg>, public CMessageFilter,
                  public CIdleHandler, public CWinDataExchange<CMainDlg>, public IWorkerThreadClient
 {
@@ -25,6 +28,8 @@ public:
 		MESSAGE_HANDLER(WM_SYSCOMMAND, OnSysCommand)
 		MESSAGE_HANDLER(WM_USER, OnUser)
 		MESSAGE_HANDLER(WM_MENUCOMMAND, OnMenuCommand)
+		MESSAGE_HANDLER(WM_VPNDIALERPLUS, OnRestore)
+		MESSAGE_HANDLER(WM_TASKBARCREATED, OnTaskbarCreated)
 		COMMAND_ID_HANDLER(ID_APP_ABOUT, OnAppAbout)
 		COMMAND_ID_HANDLER(IDCANCEL, OnCancel)
 		COMMAND_ID_HANDLER(ID_FILE_OPEN, OnMenuOpen)
@@ -50,6 +55,8 @@ public:
 	LRESULT OnSysCommand(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnUser(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnMenuCommand(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
+	LRESULT OnRestore(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
+	LRESULT OnTaskbarCreated(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnAppAbout(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnCancel(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnMenuOpen(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
@@ -69,14 +76,14 @@ public:
 	void Connect(CConnection& conn);
 	void Disconnect(CConnection& conn);
 	void PostConnect(CConnection& conn);
-	void RasDialog(CString& sConnName);
+	void RasDialog(const CString& sConnName);
 	void Minimize();
 	void NotifyIcon(bool bShow);
 	void CreateMenu();
 	int  ReportError(LPCWSTR szErr, UINT_PTR nRes, UINT nType = MB_OK | MB_ICONERROR);
 	static CString GetErrorString(DWORD dwErr);
 
-	// RasDialFunc2 
+	// RasDialFunc2
 	static void CALLBACK RasDialCallback(ULONG_PTR dwCallbackId, DWORD dwSubEntry, HRASCONN hRasConn, UINT unMsg, RASCONNSTATE RasConnState, DWORD dwError, DWORD dwExtendedError);
 
 	// IWorkerThreadClient
@@ -86,9 +93,7 @@ public:
 private:
 	LPCWSTR EMPTY_STRING = L"";
 
-	CWorkerThread<> m_threadConNotify;
-	CWorkerThread<> m_threadDisNotify;
-	CWorkerThread<> m_threadKeepAlive;
+	CWorkerThread<Win32ThreadTraits> m_threadWorker;
 
 	CString m_sSelectedConnection;
 	ConnectionMap m_ConnMap;
