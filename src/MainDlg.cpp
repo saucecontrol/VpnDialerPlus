@@ -20,12 +20,12 @@ LRESULT CMainDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam
 {
 	CenterWindow();
 
-	HICON hIcon = static_cast<HICON>(::LoadImage(_Module.GetResourceInstance(), MAKEINTRESOURCE(IDR_ICON_MAIN),
-		IMAGE_ICON, ::GetSystemMetrics(SM_CXICON), ::GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR));
-	HICON hIconSmall = static_cast<HICON>(::LoadImage(_Module.GetResourceInstance(), MAKEINTRESOURCE(IDR_ICON_MAIN),
-		IMAGE_ICON, ::GetSystemMetrics(SM_CXSMICON), ::GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR));
-	SetIcon(hIcon, TRUE);
-	SetIcon(hIconSmall, FALSE);
+	HANDLE hIconLg = ::LoadImage(_Module.GetResourceInstance(), MAKEINTRESOURCE(IDR_ICON_MAIN), IMAGE_ICON,
+	                             ::GetSystemMetrics(SM_CXICON), ::GetSystemMetrics(SM_CYICON), LR_DEFAULTCOLOR);
+	HANDLE hIconSm = ::LoadImage(_Module.GetResourceInstance(), MAKEINTRESOURCE(IDR_ICON_MAIN), IMAGE_ICON,
+	                             ::GetSystemMetrics(SM_CXSMICON), ::GetSystemMetrics(SM_CYSMICON), LR_DEFAULTCOLOR);
+	SetIcon(static_cast<HICON>(hIconLg), TRUE);
+	SetIcon(static_cast<HICON>(hIconSm), FALSE);
 
 	CMessageLoop* pLoop = _Module.GetMessageLoop();
 	ATLASSERT(pLoop);
@@ -660,8 +660,8 @@ CString CMainDlg::GetErrorString(DWORD dwErr)
 		::RasGetErrorString(dwErr, sErr.GetBuffer(512), 512);
 		sErr.ReleaseBuffer();
 	}
-	else if ( ::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-	                          NULL, dwErr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&lpMsgBuf), 0, NULL) )
+	else if ( ::FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
+	                          dwErr, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&lpMsgBuf), 0, NULL) )
 	{
 		sErr = lpMsgBuf;
 		::LocalFree(lpMsgBuf);
@@ -670,7 +670,6 @@ CString CMainDlg::GetErrorString(DWORD dwErr)
 		ATLENSURE(sErr.LoadString(IDS_ERR_UNKNOWN));
 
 	sErr.AppendFormat(IDS_FMT_ERRORCODE, static_cast<long>(dwErr), dwErr);
-
 	return sErr;
 }
 
