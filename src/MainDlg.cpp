@@ -532,13 +532,16 @@ void CMainDlg::PostConnect(CConnection& conn)
 			return;
 		}
 
-		bool bRouteFound = false;
 		MIB_IPFORWARDROW route = {0};
 		for ( u_long i = 0; i < routeTable->dwNumEntries; i++ )
 		{
-			if ( routeTable->table[i].dwForwardNextHop == ulIP && routeTable->table[i].dwForwardDest != ~0UL )
+			if ( routeTable->table[i].dwForwardNextHop == ulIP )
 			{
-				::memcpy_s(&route, sizeof(MIB_IPFORWARDROW), &routeTable->table[i], sizeof(MIB_IPFORWARDROW));
+				if ( route.dwForwardNextHop == 0UL || routeTable->table[i].dwForwardProto != MIB_IPPROTO_LOCAL )
+					::memcpy_s(&route, sizeof(MIB_IPFORWARDROW), &routeTable->table[i], sizeof(MIB_IPFORWARDROW));
+
+				if ( routeTable->table[i].dwForwardProto == MIB_IPPROTO_LOCAL )
+					continue;
 
 				dwErr = ::DeleteIpForwardEntry(&route);
 				if ( dwErr != ERROR_SUCCESS )
@@ -546,32 +549,32 @@ void CMainDlg::PostConnect(CConnection& conn)
 					ReportError(GetErrorString(dwErr), IDS_ERR_DELETEIPFORWARDENTRY);
 					//return;
 				}
-
-				bRouteFound = true;
-				break;
 			}
 		}
 
-		if ( bRouteFound )
+		if ( route.dwForwardNextHop != ulIP )
 		{
-			for ( int i = 0; i < conn.asRoutes.GetSize(); i++ )
+			ReportError(_S(IDS_MSG_NOELIGIBLEROUTE), IDS_ERR_CREATEIPFORWARDENTRY);
+			return;
+		}
+
+		for ( int i = 0; i < conn.asRoutes.GetSize(); i++ )
+		{
+			IN_ADDR iaNet, iaMask;
+			LPCWSTR szRoute = conn.asRoutes[i];
+			::RtlIpv4StringToAddress(szRoute, TRUE, &szRoute, &iaNet);
+			::ConvertLengthToIpv4Mask(::StrToInt(szRoute + 1), &iaMask.s_addr);
+
+			route.dwForwardDest = iaNet.s_addr;
+			route.dwForwardMask = iaMask.s_addr;
+			route.dwForwardType = MIB_IPNET_TYPE_DYNAMIC;
+			route.dwForwardProto = MIB_IPPROTO_NETMGMT;
+
+			dwErr = ::CreateIpForwardEntry(&route);
+			if ( dwErr != ERROR_SUCCESS )
 			{
-				IN_ADDR iaNet, iaMask;
-				LPCWSTR szRoute = conn.asRoutes[i];
-				::RtlIpv4StringToAddress(szRoute, TRUE, &szRoute, &iaNet);
-				::ConvertLengthToIpv4Mask(::StrToInt(szRoute + 1), &iaMask.s_addr);
-
-				route.dwForwardDest = iaNet.s_addr;
-				route.dwForwardMask = iaMask.s_addr;
-				route.dwForwardType = MIB_IPNET_TYPE_DYNAMIC;
-				route.dwForwardProto = MIB_IPPROTO_NETMGMT;
-
-				dwErr = ::CreateIpForwardEntry(&route);
-				if ( dwErr != ERROR_SUCCESS )
-				{
-					ReportError(GetErrorString(dwErr), IDS_ERR_CREATEIPFORWARDENTRY);
-					//return;
-				}
+				ReportError(GetErrorString(dwErr), IDS_ERR_CREATEIPFORWARDENTRY);
+				//return;
 			}
 		}
 	}

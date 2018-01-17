@@ -36,6 +36,7 @@
 #define IDS_STATUS_DISCONNECTED         227
 #define IDS_NIF_TIP                     228
 #define IDS_LBL_EMPTYLIST               229
+#define IDS_MSG_NOELIGIBLEROUTE         230
 #define IDR_MENU_POPUP                  300
 #define IDC_COMBO_CONNECTIONS           1000
 #define IDC_STATIC_STATUS               1001

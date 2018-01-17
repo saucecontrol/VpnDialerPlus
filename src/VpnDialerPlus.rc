@@ -115,7 +115,7 @@ CAPTION "About VPN Dialer+"
 FONT 8, "MS Shell Dlg 2", 0, 0, 0x0
 BEGIN
     GROUPBOX        "",IDC_STATIC,7,7,115,88
-    CTEXT           "VPN Dialer+ v1.2.0\n\n© 2005-2017\nClinton Ingram",IDC_STATIC,25,52,78,41
+    CTEXT           "VPN Dialer+ v1.2.0\n\n© 2005-2018\nClinton Ingram",IDC_STATIC,25,52,78,41
     ICON            IDR_ICON_MAIN,IDC_STATIC,55,19,20,20
     DEFPUSHBUTTON   "OK",IDOK,130,81,50,14
 END
@@ -146,7 +146,7 @@ BEGIN
             VALUE "FileDescription", "VPN Dialer+"
             VALUE "FileVersion", "1.2.0.0"
             VALUE "InternalName", "VPN Dialer+"
-            VALUE "LegalCopyright", "Copyright (c) 2005-2017 Clinton Ingram"
+            VALUE "LegalCopyright", "Copyright (c) 2005-2018 Clinton Ingram"
             VALUE "OriginalFilename", "VpnDialerPlus.exe"
             VALUE "ProductName", "VPN Dialer+"
             VALUE "ProductVersion", "1.2.0.0"
@@ -239,6 +239,7 @@ BEGIN
     IDS_STATUS_DISCONNECTED "Disconnected"
     IDS_NIF_TIP             "Double-click to restore"
     IDS_LBL_EMPTYLIST       "(none)"
+    IDS_MSG_NOELIGIBLEROUTE "An eligible RAS route could not be found"
 END
 
 #endif    // English (United States) resources
