@@ -93,7 +93,9 @@ public:
 private:
 	LPCWSTR EMPTY_STRING = L"";
 
-	CWorkerThread<Win32ThreadTraits> m_threadWorker;
+	CWorkerThread<Win32ThreadTraits> m_threadConNotify;
+	CWorkerThread<Win32ThreadTraits> m_threadDisNotify;
+	CWorkerThread<Win32ThreadTraits> m_threadKeepAlive;
 
 	CString m_sSelectedConnection;
 	ConnectionMap m_ConnMap;

@@ -45,10 +45,12 @@ LRESULT CMainDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam
 	DoDataExchange(DDX_LOAD);
 	PopulateVPNList();
 
-	ATLENSURE_SUCCEEDED(m_threadWorker.Initialize());
+	ATLENSURE_SUCCEEDED(m_threadConNotify.Initialize());
+	ATLENSURE_SUCCEEDED(m_threadDisNotify.Initialize());
+	ATLENSURE_SUCCEEDED(m_threadKeepAlive.Initialize());
 
 	m_evt.Create(NULL, TRUE, FALSE, NULL);
-	ATLENSURE_SUCCEEDED(m_threadWorker.AddHandle(m_evt, this, NULL));
+	ATLENSURE_SUCCEEDED(m_threadConNotify.AddHandle(m_evt, this, NULL));
 
 	DWORD dwErr = ::RasConnectionNotification(static_cast<HRASCONN>(INVALID_HANDLE_VALUE), m_evt, RASCN_Connection);
 	if ( dwErr != ERROR_SUCCESS )
@@ -165,8 +167,7 @@ LRESULT CMainDlg::OnRestore(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/,
 
 	NotifyIcon(false);
 	ShowWindow(SW_SHOW);
-
-	return ::SetForegroundWindow(m_hWnd);
+	return BringWindowToTop();
 }
 
 LRESULT CMainDlg::OnTaskbarCreated(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
@@ -195,7 +196,9 @@ LRESULT CMainDlg::OnCancel(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOO
 
 void CMainDlg::CloseDialog(int nVal)
 {
-	ATLENSURE_SUCCEEDED(m_threadWorker.Shutdown());
+	ATLENSURE_SUCCEEDED(m_threadConNotify.Shutdown());
+	ATLENSURE_SUCCEEDED(m_threadDisNotify.Shutdown());
+	ATLENSURE_SUCCEEDED(m_threadKeepAlive.Shutdown());
 
 	NotifyIcon(false);
 
@@ -276,7 +279,7 @@ bool CMainDlg::IsVpnConnection(LPCWSTR pszEntryName)
 
 	CHeapPtr<RASENTRY> rasEntry;
 	ATLENSURE(rasEntry.AllocateBytes(dwCb));
-	::memset(rasEntry.m_pData, 0, dwCb);
+	::SecureZeroMemory(rasEntry.m_pData, dwCb);
 	rasEntry->dwSize = sizeof(RASENTRY);
 
 	dwErr = ::RasGetEntryProperties(NULL, pszEntryName, rasEntry, &dwCb, NULL, NULL);
@@ -302,7 +305,7 @@ void CMainDlg::PopulateVPNList()
 
 	CHeapPtr<RASENTRYNAME> rasEntryNames;
 	ATLENSURE(rasEntryNames.AllocateBytes(dwCb));
-	::memset(rasEntryNames.m_pData, 0, dwCb);
+	::SecureZeroMemory(rasEntryNames.m_pData, dwCb);
 	rasEntryNames->dwSize = sizeof(RASENTRYNAME);
 
 	dwErr = ::RasEnumEntries(NULL, NULL, rasEntryNames, &dwCb, &dwEntries);
@@ -346,7 +349,7 @@ void CMainDlg::UpdateConnections()
 
 	CHeapPtr<RASCONN> rasConns;
 	ATLENSURE(rasConns.AllocateBytes(dwCb));
-	::memset(rasConns.m_pData, 0, dwCb);
+	::SecureZeroMemory(rasConns.m_pData, dwCb);
 	rasConns->dwSize = sizeof(RASCONN);
 
 	dwErr = ::RasEnumConnections(rasConns, &dwCb, &dwEntries);
@@ -473,9 +476,9 @@ void CMainDlg::Disconnect(CConnection& conn)
 	::RasHangUp(conn.m_hRasConn);
 	conn.m_bConnected = false;
 	conn.m_hRasConn = NULL;
-	if (conn.m_timer)
+	if ( conn.m_timer )
 	{
-		ATLENSURE_SUCCEEDED(m_threadWorker.RemoveHandle(conn.m_timer));
+		ATLENSURE_SUCCEEDED(m_threadKeepAlive.RemoveHandle(conn.m_timer));
 		conn.m_timer.m_h = NULL;
 	}
 
@@ -494,7 +497,7 @@ void CMainDlg::PostConnect(CConnection& conn)
 		if ( conn.sName == m_sSelectedConnection )
 		{
 			m_stcStatus.SetWindowText(_S(IDS_STATUS_ADDINGROUTES));
-			::Sleep(600);
+			::Sleep(600);  // purely cosmetic, so there's time to read the status
 		}
 
 		RASPPPIP rasIP = {0};
@@ -520,13 +523,13 @@ void CMainDlg::PostConnect(CConnection& conn)
 
 		CHeapPtr<MIB_IPFORWARDTABLE> routeTable;
 		ATLENSURE(routeTable.AllocateBytes(dwCb));
-		::memset(routeTable.m_pData, 0, dwCb);
+		::SecureZeroMemory(routeTable.m_pData, dwCb);
 
 		dwErr = ::GetIpForwardTable(routeTable, &dwCb, FALSE);
 		if ( dwErr != ERROR_SUCCESS )
 		{
 			ReportError(GetErrorString(dwErr), IDS_ERR_GETIPFORWARDTABLE);
-			//return;
+			return;
 		}
 
 		bool bRouteFound = false;
@@ -535,7 +538,7 @@ void CMainDlg::PostConnect(CConnection& conn)
 		{
 			if ( routeTable->table[i].dwForwardNextHop == ulIP && routeTable->table[i].dwForwardDest != ~0UL )
 			{
-				::memcpy(&route, &routeTable->table[i], sizeof(MIB_IPFORWARDROW));
+				::memcpy_s(&route, sizeof(MIB_IPFORWARDROW), &routeTable->table[i], sizeof(MIB_IPFORWARDROW));
 
 				dwErr = ::DeleteIpForwardEntry(&route);
 				if ( dwErr != ERROR_SUCCESS )
@@ -574,12 +577,12 @@ void CMainDlg::PostConnect(CConnection& conn)
 	}
 
 	if ( !conn.sKeepAlive.IsEmpty() )
-		ATLENSURE_SUCCEEDED(m_threadWorker.AddTimer(6000, this, (DWORD_PTR)&conn, &conn.m_timer.m_h));
+		ATLENSURE_SUCCEEDED(m_threadKeepAlive.AddTimer(6000, this, (DWORD_PTR)&conn, &conn.m_timer.m_h));
 
 	if ( !conn.m_evt )
 	{
 		conn.m_evt.Create(NULL, TRUE, FALSE, NULL);
-		ATLENSURE_SUCCEEDED(m_threadWorker.AddHandle(conn.m_evt, this, (DWORD_PTR)&conn));
+		ATLENSURE_SUCCEEDED(m_threadDisNotify.AddHandle(conn.m_evt, this, (DWORD_PTR)&conn));
 	}
 
 	DWORD dwErr = ::RasConnectionNotification(conn.m_hRasConn, conn.m_evt, RASCN_Disconnection);
