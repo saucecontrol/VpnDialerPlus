@@ -4,8 +4,7 @@
 //
 #define IDD_MAINDLG                     100
 #define IDD_SETTINGSDLG                 101
-#define IDD_LOGONDLG                    102
-#define IDD_ABOUTDLG                    103
+#define IDD_ABOUTDLG                    102
 #define IDR_ICON_MAIN                   200
 #define IDS_ERR_MSXML6                  201
 #define IDS_ERR_COM                     202
@@ -37,6 +36,7 @@
 #define IDS_NIF_TIP                     228
 #define IDS_LBL_EMPTYLIST               229
 #define IDS_MSG_NOELIGIBLEROUTE         230
+#define IDS_MSG_CREDENTIALS             231
 #define IDR_MENU_POPUP                  300
 #define IDC_COMBO_CONNECTIONS           1000
 #define IDC_STATIC_STATUS               1001
@@ -64,6 +64,6 @@
 #define _APS_NEXT_RESOURCE_VALUE        301
 #define _APS_NEXT_COMMAND_VALUE         32774
 #define _APS_NEXT_CONTROL_VALUE         1015
-#define _APS_NEXT_SYMED_VALUE           104
+#define _APS_NEXT_SYMED_VALUE           103
 #endif
 #endif

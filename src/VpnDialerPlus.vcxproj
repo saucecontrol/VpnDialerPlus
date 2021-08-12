@@ -21,12 +21,12 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{5F505233-E974-4293-94D2-910A701DC0ED}</ProjectGuid>
     <RootNamespace>VpnDialerPlus</RootNamespace>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <UseNativeEnvironment>true</UseNativeEnvironment>
     <UseOfAtl>Static</UseOfAtl>
     <CharacterSet>Unicode</CharacterSet>
@@ -138,7 +138,6 @@
   <ItemGroup>
     <ClCompile Include="AboutDlg.cpp" />
     <ClCompile Include="ConfigMgr.cpp" />
-    <ClCompile Include="LogonDlg.cpp" />
     <ClCompile Include="MainDlg.cpp" />
     <ClCompile Include="SettingsDlg.cpp" />
     <ClCompile Include="stdafx.cpp">
@@ -149,7 +148,6 @@
   <ItemGroup>
     <ClInclude Include="AboutDlg.h" />
     <ClInclude Include="ConfigMgr.h" />
-    <ClInclude Include="LogonDlg.h" />
     <ClInclude Include="MainDlg.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SettingsDlg.h" />
@@ -172,7 +170,7 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
-    <Import Project="packages\wtl.9.1.1\build\native\wtl.targets" Condition="Exists('packages\wtl.9.1.1\build\native\wtl.targets')" />
+    <Import Project="packages\wtl.10.0.10320\build\native\wtl.targets" Condition="Exists('packages\wtl.10.0.10320\build\native\wtl.targets')" />
   </ImportGroup>
   <ProjectExtensions>
     <VisualStudio>
@@ -183,6 +181,6 @@
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('packages\wtl.9.1.1\build\native\wtl.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\wtl.9.1.1\build\native\wtl.targets'))" />
+    <Error Condition="!Exists('packages\wtl.10.0.10320\build\native\wtl.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\wtl.10.0.10320\build\native\wtl.targets'))" />
   </Target>
 </Project>

@@ -96,26 +96,13 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,169,206,50,14
 END
 
-IDD_LOGONDLG DIALOGEX 0, 0, 174, 66
-STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "VPN Authentication"
-FONT 8, "MS Shell Dlg 2", 0, 0, 0x0
-BEGIN
-    RTEXT           "&User Name:",IDC_STATIC,6,9,41,8
-    EDITTEXT        IDC_EDIT_USER,54,6,114,14,ES_AUTOHSCROLL
-    RTEXT           "&Password:",IDC_STATIC,6,26,41,8
-    EDITTEXT        IDC_EDIT_PASS,54,23,114,14,ES_PASSWORD | ES_AUTOHSCROLL
-    DEFPUSHBUTTON   "OK",IDOK,64,46,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,118,46,50,14
-END
-
 IDD_ABOUTDLG DIALOGEX 0, 0, 187, 102
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "About VPN Dialer+"
 FONT 8, "MS Shell Dlg 2", 0, 0, 0x0
 BEGIN
     GROUPBOX        "",IDC_STATIC,7,7,115,88
-    CTEXT           "VPN Dialer+ v1.2.0\n\n© 2005-2018\nClinton Ingram",IDC_STATIC,25,52,78,41
+    CTEXT           "VPN Dialer+ v1.3.0\n\n© 2005-2021\nClinton Ingram",IDC_STATIC,25,52,78,41
     ICON            IDR_ICON_MAIN,IDC_STATIC,55,19,20,20
     DEFPUSHBUTTON   "OK",IDOK,130,81,50,14
 END
@@ -127,8 +114,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,2,0,0
- PRODUCTVERSION 1,2,0,0
+ FILEVERSION 1,3,0,0
+ PRODUCTVERSION 1,3,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -144,12 +131,12 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "VPN Dialer+"
-            VALUE "FileVersion", "1.2.0.0"
+            VALUE "FileVersion", "1.3.0.0"
             VALUE "InternalName", "VPN Dialer+"
-            VALUE "LegalCopyright", "Copyright (c) 2005-2018 Clinton Ingram"
+            VALUE "LegalCopyright", "Copyright (c) 2005-2021 Clinton Ingram"
             VALUE "OriginalFilename", "VpnDialerPlus.exe"
             VALUE "ProductName", "VPN Dialer+"
-            VALUE "ProductVersion", "1.2.0.0"
+            VALUE "ProductVersion", "1.3.0.0"
         END
     END
     BLOCK "VarFileInfo"
@@ -224,7 +211,6 @@ BEGIN
     IDS_ERR_INVALIDCONFIG   "Invalid Configuration"
     IDS_MSG_NEWCONFIG       "The configuration file is not valid.\nDo you want to create a new (empty) configuration file?"
     IDS_FMT_ERRORCODE       "\nError code: %d (0x%x)"
-    IDS_FMT_LOGONTITLE      "%s Authentication"
     IDS_FMT_SETTINGSTITLE   "%s Dial Settings"
     IDS_STATUS_OPENINGPORT  "Opening port..."
     IDS_STATUS_CONNECTING   "Connecting to VPN server..."
@@ -240,6 +226,7 @@ BEGIN
     IDS_NIF_TIP             "Double-click to restore"
     IDS_LBL_EMPTYLIST       "(none)"
     IDS_MSG_NOELIGIBLEROUTE "An eligible RAS route could not be found"
+    IDS_MSG_CREDENTIALS     "Enter your credentials for this connection."
 END
 
 #endif    // English (United States) resources

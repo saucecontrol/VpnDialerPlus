@@ -14,6 +14,7 @@
 #define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS
 #define _ATL_CCOMBSTR_EXPLICIT_CONSTRUCTORS
 #define _CSTRING_DISABLE_NARROW_WIDE_CONVERSION
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include <atlstr.h>
 
@@ -43,9 +44,13 @@ extern CAppModule _Module;
 #include <raserror.h>
 #include <rasdlg.h>
 
+#pragma warning(push)
+#pragma warning(disable: 28301)
 #include <iphlpapi.h>
 #include <icmpapi.h>
 #include <mstcpip.h>
+#include <wincred.h>
+#pragma warning(pop)
 
 #include <msxml6.h>
 
@@ -54,5 +59,6 @@ extern CAppModule _Module;
 #pragma comment(lib, "iphlpapi.lib")
 #pragma comment(lib, "ntdll.lib")
 #pragma comment(lib, "ws2_32.lib")
+#pragma comment(lib, "credui.lib")
 
 #pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' publicKeyToken='6595b64144ccf1df' processorArchitecture='*' language='*'\"")

@@ -2,7 +2,6 @@
 #include "resource.h"
 
 #include "AboutDlg.h"
-#include "LogonDlg.h"
 #include "SettingsDlg.h"
 #include "MainDlg.h"
 
@@ -432,6 +431,7 @@ void CMainDlg::Connect(CConnection& conn)
 
 	RASDIALPARAMS rasDialParams = {0};
 	rasDialParams.dwSize = sizeof(RASDIALPARAMS);
+	rasDialParams.dwCallbackId = reinterpret_cast<ULONG_PTR>(this);
 	ATLENSURE_SUCCEEDED(::StringCchCopy(rasDialParams.szEntryName, RAS_MaxEntryName, conn.sName));
 
 	dwErr = ::RasGetEntryDialParams(NULL, &rasDialParams, &bPasswordSaved);
@@ -443,20 +443,39 @@ void CMainDlg::Connect(CConnection& conn)
 
 	if ( !bPasswordSaved && bDoLogon )
 	{
-		CLogonDlg logondlg;
-		logondlg.m_sUser = rasDialParams.szUserName;
-		logondlg.m_sConnection = m_sSelectedConnection;
-		
-		if ( !logondlg.DoModal() )
+		CString sPrompt = _S(IDS_MSG_CREDENTIALS);
+		CREDUI_INFO credInfo = {0};
+		credInfo.cbSize = sizeof(CREDUI_INFO);
+		credInfo.hwndParent = m_hWnd;
+		credInfo.pszCaptionText = m_sSelectedConnection;
+		credInfo.pszMessageText = sPrompt;
+
+		DWORD cbCred = 0;
+		::CredPackAuthenticationBuffer(CRED_PACK_PROTECTED_CREDENTIALS, rasDialParams.szUserName, L"", NULL, &cbCred);
+
+		PBYTE pBuff = static_cast<PBYTE>(_malloca(cbCred));
+		ATLENSURE(::CredPackAuthenticationBuffer(CRED_PACK_PROTECTED_CREDENTIALS, rasDialParams.szUserName, L"", pBuff, &cbCred));
+
+		LPVOID pCred;
+		ULONG ulPkg = 0;
+		dwErr = ::CredUIPromptForWindowsCredentials(&credInfo, 0, &ulPkg, pBuff, cbCred, &pCred, &cbCred, NULL, CREDUIWIN_GENERIC);
+		_freea(pBuff);
+
+		if ( dwErr == ERROR_CANCELLED )
 			return;
 
-		ATLENSURE_SUCCEEDED(::StringCchCopy(rasDialParams.szUserName, UNLEN, logondlg.m_sUser));
-		ATLENSURE_SUCCEEDED(::StringCchCopy(rasDialParams.szPassword, PWLEN, logondlg.m_sPass));
+		DWORD unlen = UNLEN;
+		DWORD dnlen = DNLEN;
+		DWORD pwlen = PWLEN;
+		ATLENSURE(::CredUnPackAuthenticationBuffer(CRED_PACK_PROTECTED_CREDENTIALS, pCred, cbCred, rasDialParams.szUserName, &unlen, rasDialParams.szDomain, &dnlen, rasDialParams.szPassword, &pwlen));
+
+		::SecureZeroMemory(pCred, cbCred);
+		::CoTaskMemFree(pCred);
 	}
 
-	rasDialParams.dwCallbackId = reinterpret_cast<ULONG_PTR>(this);
-
 	dwErr = ::RasDial(NULL, NULL, &rasDialParams, 2, &CMainDlg::RasDialCallback, &conn.m_hRasConn);
+	::SecureZeroMemory(&rasDialParams, sizeof(rasDialParams));
+
 	if ( dwErr != ERROR_SUCCESS )
 	{
 		ReportError(GetErrorString(dwErr), IDS_ERR_RASDIAL);

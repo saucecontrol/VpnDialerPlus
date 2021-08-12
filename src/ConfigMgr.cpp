@@ -197,7 +197,7 @@ BSTR CConfigMgr::GetXPath(LPCWSTR lpszConn)
 	bstrXPath += CONFIG_ATTR_NAME;
 	bstrXPath += L"='";
 	bstrXPath += lpszConn;
-	bstrXPath += "']";
+	bstrXPath += L"']";
 
 	return bstrXPath.Detach();
 }
